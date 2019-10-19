@@ -12,14 +12,14 @@ class NoiseGenerator:
 
     def _post(self, data):
         return data
-        
+
     def pre(self, data):
         shape, dtype = data.shape, data.dtype
         data = self._pre(data)
         assert shape == data.shape
         assert dtype == data.dtype
         return data
-        
+
     def post(self, data):
         shape, dtype = data.shape, data.dtype
         data = self._post(data)
@@ -31,12 +31,12 @@ class NoiseGenerator:
 class Static(NoiseGenerator):
     def __init__(self, power=0.1):
         self.power = power
-        
+
     def _pre(self, data):
         data = data + np.random.normal(size=data.shape).astype(np.float32) * self.power
         return data
 
-    
+
 class RandomImpulseResponse(NoiseGenerator):
     def __init__(self, dataset_path):
         self.ir = []
@@ -50,14 +50,31 @@ class RandomImpulseResponse(NoiseGenerator):
         impulse_resp = random.choice(self.ir)[:len(data)]
         return np.convolve(data, impulse_resp, 'same')
 
-    
+
 class FileNoise(NoiseGenerator):
-    def __init__(self, dataset_path, snr):
-        pass
-    
+    def __init__(self, dataset_path, snr=5):
+        self.noise_datasets = []
+        self.snr = snr
+        for fname in os.listdir(dataset_path):
+            if fname.endswith("wav"):
+                sr, data = sio.read(os.path.join(dataset_path, fname))
+                assert sr == 16000
+                self.noise_datasets.append(data)
+
+    def _pre(self, data):
+        noise = random.choice(self.noise_datasets)
+        if len(noise) > len(data):
+            i = np.random.randint(0, len(noise) - len(data))
+            noise = noise[i : i + len(data)]
+        else:
+            noise = np.pad(noise, ((0, len(data) - len(noise)), ), 'constant')
+        gain = np.abs(noise).mean() * (10 ** (self.snr * 0.1)) / (np.abs(data).mean() + 2e-12)
+        print("Gain of the noise:", gain)
+        return data + gain * noise
+
 
 class CodecSox(NoiseGenerator):
-    
+
     _formats = {
         "gsm": {"ext": ".gsm", "opt": []},
         "amr-nb-lq": {"ext": ".amr-nb", "opt": ["-C", "0"]},
@@ -66,12 +83,12 @@ class CodecSox(NoiseGenerator):
         "mp3-lq": {"ext": ".mp3", "opt": ["-C", "96.10"]},
         "mp3-hq": {"ext": ".mp3", "opt": ["-C", "192.1"]},
     }
-    
+
     def __init__(self, fmt):
         rc = subprocess.Popen(["which", "sox"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait()
         assert rc == 0
         self.format = self._formats[fmt]
-        
+
     def _pre(self, data):
         oldname = tempfile.mktemp() + ".wav"
         tmpname = tempfile.mktemp() + self.format['ext']
@@ -86,4 +103,3 @@ class CodecSox(NoiseGenerator):
         data = np.zeros_like(data)
         data[:min(len(data), len(newdata))] = newdata[:min(len(data), len(newdata))]
         return data
-    
