@@ -44,6 +44,7 @@ class RandomImpulseResponse(NoiseGenerator):
             if fname.endswith("wav"):
                 sr, data = sio.read(os.path.join(dataset_path, fname))
                 assert sr == 16000
+                data = data.astype(np.float32) / 2**15
                 self.ir.append(data)
 
     def _pre(self, data):
@@ -59,6 +60,7 @@ class FileNoise(NoiseGenerator):
             if fname.endswith("wav"):
                 sr, data = sio.read(os.path.join(dataset_path, fname))
                 assert sr == 16000
+                data = data.astype(np.float32) / 2**15
                 self.noise_datasets.append(data)
 
     def _pre(self, data):
@@ -69,8 +71,8 @@ class FileNoise(NoiseGenerator):
         else:
             noise = np.pad(noise, ((0, len(data) - len(noise)), ), 'constant')
         gain = np.abs(noise).mean() * (10 ** (self.snr * 0.1)) / (np.abs(data).mean() + 2e-12)
-        print("Gain of the noise:", gain)
-        return data + gain * noise
+        # print("Gain of the noise:", gain)
+        return (data + gain * noise).astype(data.dtype)
 
 
 class CodecSox(NoiseGenerator):

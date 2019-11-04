@@ -1,7 +1,11 @@
+import keras
+import numpy as np
 import os
 import fwks.model as model
 import fwks.dataset as dataset
 import fwks.metricization as metricization
+
+from fwks.miscellanea import StopOnConvergence
 
 """
 TODO:
@@ -30,11 +34,13 @@ class Task(type):
     
 def make_training_task(
         noise=None,
-        evaluation_metrics=None
+        evaluation_metrics=None,
+        evaluation_selection=None,
     ):
     # TODO: add training using noisy instead of clean
+    _evaluation_selection = evaluation_selection
 
-    
+
     class AbstractModelTraining(Task):
     
         how_much = 9000
@@ -42,10 +48,12 @@ def make_training_task(
         epochs = 250
         from_path = "datasets/clarin-long/data"
         metrics = evaluation_metrics or []
+        evaluation_selection = _evaluation_selection
 
         def __new__(self, name, bases, dct):
             this = self
             _metrics = self.metrics
+            _evaluation_selection = self.evaluation_selection
             
             @classmethod
             def get_dataset(self):
@@ -74,7 +82,7 @@ def make_training_task(
                 am.summary()
                 if self._metrics:
                     metric_obj = metricization.TrainedModelMetricization(am, self._metrics)
-                    results = metric_obj.on_dataset(dset)
+                    results = metric_obj.on_dataset(dset, partial=self._evaluation_selection)
                     results.summary()
                 am.save(os.path.join(cache, "model.zip"), save_full=True)
                 print("=" * 60)
@@ -91,7 +99,7 @@ def make_training_task(
 
             new_dct = {"run": run, "validate": validate, "summary": summary, 
                        "how_much": this.how_much, "get_dataset": get_dataset,
-                       "_metrics": _metrics}
+                       "_metrics": _metrics, "_evaluation_selection": _evaluation_selection}
             new_dct.update(dct)
             return super().__new__(self, name, bases, new_dct)
         
@@ -166,3 +174,95 @@ def make_ab_feature_test(noise_gen):
             return super().__new__(self, name, bases, new_dct)
 
     return AbstractABTraining
+
+
+def make_feature_learnability(noise_gen=None):
+    _noise_gen = noise_gen
+
+    class FeatureLearnabilityTask(Task):
+        """
+        classmethods:
+        get_mapping
+        get_mapper_network(mapping_size)
+        """
+
+        how_much = 9000
+        noise_gen = _noise_gen
+        from_path = "datasets/clarin-long/data"
+
+        def __new__(self, name, bases, dct):
+            this = self
+
+            @classmethod
+            def get_dataset(self):
+                dset = dataset.Dataset(noise_gen=this.noise_gen)
+                dset.loader_adapter = "clarin"
+                dset.get_from(self.from_path)
+                return dset
+
+            @classmethod
+            def validate(self, cache):
+                pass
+
+            @classmethod
+            def run(self, cache):
+                try:
+                    if not os.path.exists(cache):
+                        os.mkdir(cache)
+                except:
+                    pass
+                dset = self.get_dataset()
+                dset.select_first(self.how_much)
+                am = self.get_mapping()
+                mapping_generator = model.MappingGenerator(am.stages)
+                mapping = mapping_generator.get(dset)
+                dset.generate(mapping, ["clean"])
+                clean = dset.clean
+
+                dset = self.get_dataset()
+                dset.select_first(self.how_much)
+                am = self.get_windowing()
+                mapping_generator_2 = model.MappingGenerator(am.stages)
+                mapping_2 = mapping_generator_2.get(dset)
+                dset.generate(mapping_2, ["clean"])
+                sources = dset.clean
+                # print(clean.shape)
+                # print(sources.shape)
+                
+                mapper = self.get_mapper_network(sources.shape, clean.shape)
+                mapper.compile(loss='mse', optimizer='adam')
+                mapper.summary()
+                valid = np.random.random(sources.shape[0]) > 0.8
+                mapper.fit(sources[~valid], clean[~valid],
+                    batch_size=32,
+                    callbacks=[
+                        keras.callbacks.TerminateOnNaN(),
+                        StopOnConvergence(4)
+                    ],
+                    validation_data=[sources[valid], clean[valid]],
+                    epochs=250,
+                )
+                print("=" * 60)
+                print("Task done!\n")
+
+            @classmethod
+            def summary(self, cache, show=False):
+                pass
+            
+            @classmethod
+            def get_windowing(self):
+                mdl = self.get_mapping()
+                return mdl.__class__([mdl.stages[0]])
+
+            new_dct = {"run": run, "validate": validate, "summary": summary,
+                       "how_much": this.how_much, "get_dataset": get_dataset,
+                      "get_windowing": get_windowing}
+            assert "get_mapping" in dct.keys()
+            assert "get_mapper_network" in dct.keys()
+            new_dct.update(dct)
+            return super().__new__(self, name, bases, new_dct)
+
+    return FeatureLearnabilityTask
+
+
+FeatureLearnabilityTask = make_feature_learnability()

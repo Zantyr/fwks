@@ -15,7 +15,7 @@ from syntax import Show
 from .stage_meta import SelectionAdapter, Stage, NetworkableMixin, Loss, Analytic, Neural, ToDo, DType, CustomNeural, Normalizer
 from .stage_selection_adapter import RandomSelectionAdapter, SpeakerSelectionAdapter
 from .stage_loss import CTCLoss, L2Loss
-from .stage_transforms import PlainPowerFourier, LogPowerFourier, TrainableCQT, TrainableCZT, CZT, CQT, CommonFateTransform, DCT, Cochleagram
+from .stage_transforms import PlainPowerFourier, LogPowerFourier, TrainableCQT, TrainableCZT, CZT, CQT, CommonFateTransform, DCT, Cochleagram, CustomCochleagram
 from .stage_preprocessing import Window, EqualLoudnessWeighting, PCENScaling, AdaptiveGainAndCompressor, OverlapAdd
 from .stage_filterbanks import TriangularERB, HarmonicTriangularERB, OverlappingHarmonicTriangularERB, RoEx, GammatoneFilterbank, MelFilterbank
 from .stage_time_domain import (GammaChirp, TimeRoex, TrainableConvolve, CARFAC,
@@ -23,7 +23,7 @@ from .stage_time_domain import (GammaChirp, TimeRoex, TrainableConvolve, CARFAC,
 )
 from .stage_neural import (EarlyDNN, EarlyConv2D, EarlyConv1D, SparseDNN,
     AntimonotonyLayer, RNN, LaterConv1D, LaterDNN, LaterSparse1D, TimeWarpingRNN,
-    TimeWarpingCNN, Core, CNN2D, LearnableFilterbank
+    TimeWarpingCNN, Core, CNN2D, LearnableFourierFBanks
 )
 from .stage_misc import LogPower, ConcatFeatures
 from .stage_normalizers import MeanStdNormalizer

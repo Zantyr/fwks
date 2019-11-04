@@ -214,3 +214,32 @@ class Cochleagram(Analytic):
                              channels=self.num_banks,
                              f_min=20).T
         return gram
+
+    
+class CustomCochleagram(Analytic):
+    def __init__(self, num_banks=64, window_time=512, hop_time=128, fs=16000, n_harms=8):
+        self.num_banks = num_banks
+        self.fs = fs
+        self.window_time = window_time
+        self.hop_time = hop_time
+        self.n_harms = n_harms
+
+    def output_dtype(self, input_dtype):
+        if self.previous:
+            input_dtype = self.previous.output_dtype(input_dtype)
+        time = (input_dtype.shape[0] - self.window_time) // self.hop_time + 1
+        return DType("Array", [time, self.num_banks], np.float32)
+
+    def _function(self, recording):
+        a = gtgram.centre_freqs(16000, 64, 20)
+        filters = [gtgram.make_erb_filters(16000, i * a) for i in range(1, self.n_harms)]
+        spec = [gtgram.erb_filterbank(recording, fbank) for fbank in filters]
+        new_spec = spec[0] * 0
+        for ix, sp in enumerate(spec):
+            new_spec += sp * (1 / (ix + 1))
+        gram = new_spec.T
+        time = (len(recording) - self.window_time) // self.hop_time + 1        
+        spec = np.zeros([time, 64], np.float32)
+        for i in range(time):
+            spec[i, :] = gram[i * 128 : i * 128 + 512, :].mean(0)
+        return spec

@@ -8,7 +8,11 @@ from keras.models import Model
 from tensorflow.spectral import dct
 
 import keras.backend as K
+import numpy as np
 
+from fwks.model.meta import _defaults
+
+from .stage_filterbanks import TriangularERB
 from .stage_meta import ToDo, Neural, Analytic
 
 
@@ -176,13 +180,62 @@ class SpectralCoefficients(ToDo):
     """
     def spectral_coeffs(x):
         return dct(K.log(x**2 + 2e-12))[:, :, :20]
+    
+    
+class FilterConstraint(keras.constraints.Constraint):
+    def __init__(self, n_filters, n_fft):
+        erb = TriangularERB(n_filts=n_filters, window=n_fft)
+        self.mask = erb.filter != 0
+        self.n_fft = n_fft
+        self.n_filters = n_filters
+    
+    def __call__(self, v):
+        if not hasattr(self, "mask_object"):
+            self.mask_object = K.constant(self.mask)
+        v = v * self.mask_object
+        v = K.clip(v, 0, 1)
+        return v
+    
+    def get_config(self):
+        return {
+            "n_filters": self.n_filters,
+            "n_fft": self.n_fft,            
+        }
+
+_defaults["FilterConstraint"] = FilterConstraint
 
 
-
-class LearnableFilterbank:
+class LearnableFourierFBanks(Neural):
     """
-
+    Initializes and adds constaints
+    
+    Need to register constraints to loaders...
     """
+    
+    def __init__(self, n_filters=64, fft_size=512):
+        self.n_filters = n_filters
+        self.fft_size = fft_size
+        
+    @property
+    def n_fft(self):
+        return self.fft_size // 2 + 1
+        
+    def new_network(self, dtype):
+        constraint = FilterConstraint(
+           self.n_filters, self.fft_size
+        )
+        first = inp = keras.layers.Input(shape=([None] + list(dtype.shape[1:])))
+        if len(dtype.shape) > 2:
+            first = keras.layers.Flatten()(first)
+        lyr = keras.layers.Dense(self.n_filters, 
+            use_bias=False,
+            kernel_constraint=constraint
+        )
+        lyr = lyr(first)
+        outp = keras.layers.BatchNormalization()(lyr)
+        mdl = Model(inp, outp)
+        return mdl
+    
 
 
 ### Below are the aliases needed for the convenience of the dissertation

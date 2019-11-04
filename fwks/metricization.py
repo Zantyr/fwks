@@ -5,10 +5,13 @@ To do:
 """
 
 import dill
+import editdistance
 import numpy as np
+import random
 import tqdm
 
-from fwk.acoustic import MappingGenerator
+from fwks.model import MappingGenerator
+from fwks.stage import ToDo
 
 
 class Alphabet:
@@ -54,17 +57,41 @@ class ManhattanMetric(Metric):
         return np.sqrt((np.abs(clean - dirty)).sum(1)).mean()
     
 
-class WER:
-    pass
-
-
-class PER(Metric):
+class WER(ToDo):
     requires = ["predicted_phones", "transcriptions"]
 
-    def calculate(self, prediction, transcriptions, **rest):
-        print(prediction)
-        print(transcripts)
-        raise ERRRERADSFGSDFCV
+    def __init__(self, dictionary):
+        self.dictionary = dictionary
+        
+
+class PER(Metric):
+    _requires = ["predicted_phones", "transcriptions"]
+    
+    def __init__(self, remove_symbols=None, mdl_symbol_map=None, dset_all_phones=None):
+        self.remove_symbols = remove_symbols or []
+        self.requires = self._requires[:]
+        if dset_all_phones is not None:
+            self.all_phones = dset_all_phones
+        else:
+            self.requires.append("dataset:all_phones")
+        if mdl_symbol_map is not None:
+            self.symbol_map = mdl_symbol_map
+        else:
+            self.requires.append("model:symbol_map")
+            
+    def supply(self, k, v):
+        setattr(self, k.split(":")[-1], v)
+        self.requires.remove(k)
+            
+    def calculate(self, predicted_phones, transcriptions, **rest):
+        # predicted_phones = [x[0] for x in predicted_phones]
+        old_predicted_phones = predicted_phones
+        predicted_phones = [self.all_phones.index(self.symbol_map[x]) for x in predicted_phones[0] if self.symbol_map[x] not in self.remove_symbols]
+        transcriptions = [x for x in transcriptions if self.all_phones[x] not in self.remove_symbols] 
+        # 2print(old_predicted_phones, predicted_phones, list(transcriptions))
+        dist = editdistance.eval(predicted_phones, transcriptions)
+        dist = float(dist) / len(transcriptions)
+        return dist
 
 
 class PhonemeClassConfusion:
@@ -186,48 +213,76 @@ class TrainedModelMetricization:
     def add_metric(self, metric):
         self.metrics.append(metric)
 
-    def on_dataset(self, dataset):
+    def _get_requirements(self, dataset):
         # requirements of metrics should be aggregated
         requirements, data_required = set(), {}
         for metric in self.metrics:
             requirements |= set(metric.requires)
-        for req in requirements:
-            if req not in ["prediction", "predicted_phones"]:
+        requirements = list(requirements)
+        for req in requirements[:]:
+            # print(req)
+            if ":" in req:
+                # print("removing")
+                if req.split(":")[0] == "dataset":
+                    value = getattr(dataset, req.split(":")[1])
+                elif req.split(":")[0] == "model":
+                    value = getattr(self.model, req.split(":")[1])
+                else:
+                    raise AttributeError("Strange requirement to metric: " + req)
+                for metric in self.metrics:
+                    if req in metric.requires:
+                        metric.supply(req, value)
+                requirements.remove(req)
+            elif req not in ["prediction", "predicted_phones"]:
                 data_required[req] = getattr(dataset, req)
                 data_required[req + "_lens"] = getattr(dataset, req + "_lens")
+        return requirements, data_required        
+        
+    def on_dataset(self, dataset, partial=None):
+        requirements, data_required = self._get_requirements(dataset)
+        selectables = list(data_required.keys())
+        # print(requirements, data_required)
+        if partial is None:
+            selection = lambda: range(len(dataset.clean_lens))
+        else:
+            subselection = random.sample(range(len(dataset.clean_lens)), partial)
+            selection = lambda: subselection
         if "prediction" in requirements:
             prediction, prediction_lens = [], []
-            for ix in tqdm.tqdm(range(len(dataset.clean_lens))):
+            for ix in tqdm.tqdm(selection()):
                 clean = dataset.clean[ix, :dataset.clean_lens[ix]]
-                preds = self.model.predict_raw(clean)
+                preds = self.model.predict_raw(clean, use_mapping=False)
                 prediction.append(preds)
                 prediction_lens.append(len(preds))
             data_required["prediction"] = prediction
             data_required["prediction_lens"] = prediction_lens
         if "predicted_phones" in requirements:
             predicted_phones, predicted_phones_lens = [], []
-            for ix in tqdm.tqdm(range(len(dataset.clean_lens))):
+            for ix in tqdm.tqdm(selection()):
                 clean = dataset.clean[ix, :dataset.clean_lens[ix]]
-                preds = self.model.predict(clean, literal=True)
+                preds = self.model.predict(clean, literal=False, use_mapping=False)
                 predicted_phones.append(preds)
                 predicted_phones_lens.append(len(preds))
             data_required["predicted_phones"] = predicted_phones
             data_required["predicted_phones_lens"] = predicted_phones_lens
         # calculate proper predictions
         results = {metric.name: [] for metric in self.metrics}
-        for ix in range(len(dataset.clean_lens)):
+        print("Calculating metrics...")
+        for ix, sel in tqdm.tqdm(enumerate(selection())):
             # generate data slices according to requirements
             data = {}
             for req in requirements:
+                selector = sel if req in selectables else ix
+                # print(ix, req, selector)
                 required = data_required[req]
                 if isinstance(required, np.ndarray) and hasattr(dataset, req + "_lens"):
                     required_len = getattr(dataset, req + "_lens")
-                    required = required[ix, :required_len[ix]]
+                    required = required[selector, :required_len[selector]]
                 else:
-                    required = required[ix]
+                    required = required[selector]
                     if isinstance(required, np.ndarray) and hasattr(dataset, req + "_lens"):
                         required_len = getattr(dataset, req + "_lens")
-                        required = required[:required_len[ix]]
+                        required = required[:required_len[selector]]
                 data[req] = required
             for metric in self.metrics:
                 results[metric.name].append(metric.calculate(**data))

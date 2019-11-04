@@ -214,6 +214,9 @@ class Analytic(Stage):
 
     
 class Normalizer(Stage):
+    def __init__(self):
+        self.trained = False    
+
     @property
     def trainable(self):
         False

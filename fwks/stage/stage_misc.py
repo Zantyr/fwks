@@ -24,7 +24,7 @@ class LogPower(Analytic):
         return input_dtype
     
     def _function(self, recording):
-        return (-1 if self.negative else 1) * np.log(np.abs(recording))
+        return (-1 if self.negative else 1) * np.log(np.abs(recording) + 2e-12)
     
     
 class ComposeFeatures(Analytic):

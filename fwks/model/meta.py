@@ -10,7 +10,7 @@ import zipfile
 import keras.backend as K
 import tensorflow as tf
 
-from fwks.stage import Neural, Analytic, Loss, DType, Stage
+from fwks.stage import Neural, Analytic, Loss, DType, Stage, Normalizer
 from fwks.miscellanea import PeekGradients, StopOnConvergence
 
 _defaults = {"tf": tf}    # this should contain everything...
@@ -162,13 +162,16 @@ class SoundModel:
     def get_mapping(self):
         return Representation(self.mapping, self.representation_mapping)
 
-    def predict_raw(self, recording):
-        if len(recording.shape) < 2:
+    def predict_raw(self, recording, use_mapping=True, multiple_recordings=False):
+        if not multiple_recordings:
             recording = np.stack([recording])
-        dtype = self.mapping.output_dtype(DType("Array", recording.shape[1:], recording.dtype))
-        mapped = np.zeros([recording.shape[0]] + dtype.shape, dtype=dtype.dtype)
-        for i in range(recording.shape[0]):
-            mapped[i] = self.mapping.map(recording[i])
+        if use_mapping:
+            dtype = self.mapping.output_dtype(DType("Array", recording.shape[1:], recording.dtype))
+            mapped = np.zeros([recording.shape[0]] + dtype.shape, dtype=dtype.dtype)
+            for i in range(recording.shape[0]):
+                mapped[i] = self.mapping.map(recording[i])
+        else:
+            mapped = recording
         return self.network.predict(mapped)
 
     def save(self, path, format=False, save_full=True):
@@ -235,6 +238,22 @@ class SoundModel:
             return new_one
         finally:
             shutil.rmtree(tmpdname)
+            
+    def _remove_mod1(self, data, batch_size):
+        """
+        Fix for problems when the data length mod batch_size = 1
+        """
+        length = data[0]
+        if isinstance(length, list) or isinstance(length, tuple):
+            length = length[0]
+        length = length.shape[0]
+        if length % batch_size == 1:
+            if isinstance(data[0], list) or isinstance(data[0], tuple):
+                return [x[:-1] for x in data[0]], [x[:-1] for x in data[1]]
+            else:
+                return data[0][:-1], data[1][:-1]
+        else:
+            return data
 
     def build(self, dataset, **config):
         start_time = time.time()
@@ -250,15 +269,18 @@ class SoundModel:
                     os.path.sep, self.name, "{epoch:04d}"),
                              save_weights_only=False, period=5)
                 callbacks.append(mc)
+            training_data = self._remove_mod1(loss.fetch_train(dataset), 32)
+            valid_data = self._remove_mod1(loss.fetch_valid(dataset), 32)
             config = {
                 "batch_size": 32,
                 "callbacks": callbacks,
-                "validation_data": loss.fetch_valid(dataset),
+                "validation_data": valid_data,
                 "epochs": self.num_epochs,
             }
             self.network = network
             train_network.summary()
-            train_network.fit(*loss.fetch_train(dataset), **config)
+            train_network.fit(*training_data, **config)
+        test_data = self._remove_mod1(loss.fetch_test(dataset), 32)
         self.statistics["loss"] = train_network.evaluate(*loss.fetch_test(dataset))
         self.split_signature = loss.selection_hash
         for metric in self.metrics:

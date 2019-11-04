@@ -25,8 +25,8 @@ _defaults = {"tf": tf}    # this should contain everything...
 
 class AcousticModel(SoundModel):
 
-    def predict(self, recording, literal=True, number_of_preds=1, beam_width=2500):
-        predictions = self.predict_raw(recording)
+    def predict(self, recording, literal=True, use_mapping=True, number_of_preds=1, beam_width=2500, multiple_recordings=False):
+        predictions = self.predict_raw(recording, use_mapping=use_mapping, multiple_recordings=multiple_recordings)
         decoded = K.ctc_decode(predictions, [predictions.shape[1]] * predictions.shape[0], greedy=False, beam_width=beam_width, top_paths=number_of_preds)
         if literal:
             # print(decoded)
@@ -40,7 +40,7 @@ class AcousticModel(SoundModel):
                 all_translations.append(rec_translations)
             return all_translations
         else:
-            return decoded
+            return decoded[0][0].eval(session=K.get_session())
 
     def to_wfst(self, recording):
         phonemes = self.predict_raw(recording)

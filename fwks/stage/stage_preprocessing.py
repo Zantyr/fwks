@@ -110,6 +110,7 @@ class PCENScaling(Analytic):
     def __init__(self, sr=16000, hop=128, time_constant=0.4):
         self.alpha = 0.98
         self.delta = 2
+        self.bias = 2
         self.r = 0.5
         self.epsilon = 1e-6
         t_frames = time_constant * sr / hop
@@ -122,7 +123,8 @@ class PCENScaling(Analytic):
     
     def _function(self, spec):
         spec_filtered = sps.lfilter([self.b], [1, self.b - 1], spec)
-        return ((spec / (self.epsilon + spec_filtered) ** self.alpha ) + self.delta) ** self.r - self.delta ** self.r
+        smooth = np.exp(-self.alpha * (np.log(self.epsilon) + np.log1p(spec_filtered / self.epsilon)))
+        return (spec * smooth  + self.bias) ** self.r - self.delta ** self.r
         
 
 class AdaptiveGainAndCompressor(Analytic):

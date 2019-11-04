@@ -135,8 +135,9 @@ class Dataset:
             key = [ix] + [slice(None, x, None) for x in data.shape]
             recordings.__setitem__(key, data)
         if hasattr(mapping, "normalize"):
-            print("Applying normalization")
-            recordings = mapping.normalize(recordings, lens)
+            if not (mapping.trained if hasattr(mapping, "trained") else hasattr(mapping, "mean")):
+                print("Applying normalization")
+                recordings = mapping.normalize(recordings, lens)
         self.clean = recordings
         self.clean_lens = np.array(lens)
 
@@ -157,8 +158,9 @@ class Dataset:
             key = [ix] + [slice(None, x, None) for x in data.shape]
             recordings.__setitem__(key, data)
         if hasattr(mapping, "normalize"):
-            print("Applying normalization")
-            recordings = mapping.normalize(recordings, lens)
+            if not mapping.trained:
+                print("Applying normalization")
+                recordings = mapping.normalize(recordings, lens)
         self.noisy = recordings
         self.noisy_lens = np.array(lens)
         
@@ -197,5 +199,84 @@ class Dataset:
             self._loader_adapter = v
 
     # hotfix accessor
+    @property
     def transcriptions_lens(self):
         return self.transcription_lens
+
+    
+def _generate_fundamental_pair(frequency, n_harms=6, sr=16000, length=160000):
+    t = np.arange(length).astype(np.float32)
+    t = t / sr * 2 * np.pi
+    with_base = np.zeros([length], np.float32)
+    without_base = np.zeros([length], np.float32)
+    powers = np.random.random(n_harms - 1) + 1
+    base_power = np.min(powers)
+    with_base += base_power * np.sin(t * frequency)
+    for i, power in enumerate(powers):
+        without_base += power * np.sin(t * frequency * (i + 2))
+        with_base += power * np.sin(t * frequency * (i + 2))
+    return with_base, without_base
+
+def _fundamental_freqs(how_long, sr):
+    freq = np.random.randint(20, 500)
+    n_harms = np.random.randint(4, 9)
+    return _generate_fundamental_pair(freq, n_harms, sr=sr, length=how_long)
+
+    
+class SyntheticDataset:
+    
+    _functions = {
+        "fundamental_freqs": _fundamental_freqs
+    }
+    
+    def __init__(self,
+                 fn="fundamental_freqs",
+                 how_much=320,
+                 how_long=160000,
+                 what_is_generated=None,
+                 sr=16000):
+        self.what_is_generated = what_is_generated
+        self.sr = sr
+        self.how_long = how_long
+        self.how_much = how_much 
+        self.fn = SyntheticDataset._functions if isinstance(fn, str) else fn
+        
+    def generate(self, mapping, requirements):
+        assert all([x in self.what_is_generated for x in requirements])
+        self._get_for_requirements(mapping)
+        self._hash = hashlib.sha512(str(np.random.randint(0, 10000000, 10)).encode("utf-8")).digest().hex()[:16]
+        # get numpy random state
+        
+    def generate_dtype(self, mapping):
+        dtype = stage.DType("Array", [self.how_long], np.float32)
+        return mapping.output_dtype(dtype)
+
+    @property
+    def signature(self):
+        return self._hash
+
+    def _get_for_requirements(self, mapping):
+        print("Synthetising recordings")
+        params = {
+            "how_long": self.how_long,
+            "sr": self.sr
+        }
+        n_recs = self.how_much
+        dtype = mapping.output_dtype(stage.DType("Array", [self.how_long], np.float32))
+        recordings = {}
+        for gen in self.what_is_generated:
+            recordings[gen] = np.zeros([n_recs] + dtype.shape, dtype.dtype)
+        for ix in tqdm.tqdm(range(self.how_much)):
+            all_generated = self.fn(**params)
+            for gen, data in zip(self.what_is_generated, all_generated):
+                data = mapping.map(data)
+                key = [ix] + [slice(None, x, None) for x in data.shape]
+                recordings[gen].__setitem__(key, data)
+        if hasattr(mapping, "normalize"):
+            if not mapping.trained:
+                print("Applying normalization")
+                for gen in self.what_is_generated:
+                    recordings[gen] = mapping.normalize(recordings[gen], [dtype.shape[0]] * self.how_much)
+        for gen in self.what_is_generated:
+            setattr(self, gen, recordings[gen])
+            setattr(self, gen + "_lens", [dtype.shape[0]] * self.how_much)
