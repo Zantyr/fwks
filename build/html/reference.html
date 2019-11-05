@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Package reference &#8212; fwks 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Project status" href="status.html" />
+    <link rel="prev" title="Model lifecycle - training, evaluation and deployment" href="modelLifecycle.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="package-reference">
+<h1>Package reference<a class="headerlink" href="#package-reference" title="Permalink to this headline">¶</a></h1>
+<p>Includes all documentation that is relevant to the usage of the library.
+Documentation for development is not included.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+</ul>
+<span class="target" id="module-fwks.__main__"></span><div class="section" id="fwks-main">
+<h2>fwks.__main__<a class="headerlink" href="#fwks-main" title="Permalink to this headline">¶</a></h2>
+<p>Main subprogram of the FWKS module. This function allows to call the fwks submodule and perform
+operations including installation of library, testing the dependencies, running models and deploying them
+as applications.</p>
+</div>
+<span class="target" id="module-fwks.dataset"></span><div class="section" id="fwks-dataset">
+<h2>fwks.dataset<a class="headerlink" href="#fwks-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Contains implementation of datasets and methods to prepare data for later processing. Includes
+classes meant to find the list of files and load them, forming all required data sources.</p>
+<p>Dataset contains data sources. Data source may be a set of recordings, metadata and so on, indexed by integers
+(as a list or ndarray). Dataset uses a set of adapters to extend the capabilities by loading from diverse paths,
+preparing other versions of data beyond simple set of recordings etc. LoaderAdapter loads instances from
+specific path and MapperAdapter extends the dataset by creating derivatives of the data.</p>
+</div>
+<span class="target" id="module-fwks.etc"></span><span class="target" id="module-fwks.installer"></span><div class="section" id="fwks-installer">
+<h2>fwks.installer<a class="headerlink" href="#fwks-installer" title="Permalink to this headline">¶</a></h2>
+<p>FWKS installer module.</p>
+<p>Makes sure everything is distributed and compiled for FWKS to use. FWKS has some binary dependencies and in order to fully use it, the dependencies should
+be installed in proper way. Installer is a tool that may help in the process (it is however not automatic).</p>
+<dl class="function">
+<dt id="fwks.installer.is_installed">
+<code class="sig-prename descclassname">fwks.installer.</code><code class="sig-name descname">is_installed</code><span class="sig-paren">(</span><em class="sig-param">dependency</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/installer.html#is_installed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.installer.is_installed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify whether given dependency is installed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fwks.installer.all_dependencies">
+<code class="sig-prename descclassname">fwks.installer.</code><code class="sig-name descname">all_dependencies</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/installer.html#all_dependencies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.installer.all_dependencies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all registered dependencies in a form of a list of names</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fwks.installer.dependency_installer">
+<code class="sig-prename descclassname">fwks.installer.</code><code class="sig-name descname">dependency_installer</code><span class="sig-paren">(</span><em class="sig-param">dependency</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/installer.html#dependency_installer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.installer.dependency_installer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a callback that is used to install dependency. Each callback
+has only optional and keyword inputs.</p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-fwks.metricization"></span><div class="section" id="fwks-metricization">
+<h2>fwks.metricization<a class="headerlink" href="#fwks-metricization" title="Permalink to this headline">¶</a></h2>
+<p>This modules contains metric and objects that perform the measurements of the models</p>
+<dl class="class">
+<dt id="fwks.metricization.Alphabet">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">Alphabet</code><a class="reference internal" href="_modules/fwks/metricization.html#Alphabet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.Alphabet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for Phoneme confusion distance</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.WER">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">WER</code><span class="sig-paren">(</span><em class="sig-param">dictionary</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#WER"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.WER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<span class="target" id="module-fwks.model"></span><div class="section" id="model">
+<h2>model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<p>Library for all types of models. Model is a single, serializable instance of a pipeline that fulfills particular
+processing job, either from preprocessed or raw data, mostly the latter.</p>
+<p>Models define the mode of training.</p>
+<dl class="class">
+<dt id="fwks.model.AcousticModel">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">AcousticModel</code><span class="sig-paren">(</span><em class="sig-param">stages</em>, <em class="sig-param">name=None</em>, <em class="sig-param">symbol_map=None</em>, <em class="sig-param">callbacks=None</em>, <em class="sig-param">num_epochs=250</em>, <em class="sig-param">checkpoint_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/acoustic.html#AcousticModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.AcousticModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acoustic model</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.model.ItemLoader">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">ItemLoader</code><span class="sig-paren">(</span><em class="sig-param">item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/meta.html#ItemLoader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.ItemLoader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates loadable item from object
+Any pickleability should be done here</p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-fwks.stage"></span><div class="section" id="fwks-stage">
+<h2>fwks.stage<a class="headerlink" href="#fwks-stage" title="Permalink to this headline">¶</a></h2>
+<p>Main set of building blocks for the models.</p>
+<dl class="class">
+<dt id="fwks.stage.AbstractFilter">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">AbstractFilter</code><a class="reference internal" href="_modules/fwks/stage.html#AbstractFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.AbstractFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will represent phase shifts in the cochlea</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.AbstractWavelet">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">AbstractWavelet</code><a class="reference internal" href="_modules/fwks/stage.html#AbstractWavelet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.AbstractWavelet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.ExcitationTrace">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">ExcitationTrace</code><a class="reference internal" href="_modules/fwks/stage.html#ExcitationTrace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.ExcitationTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add max of current and exponential smoothing of past features at each band</p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-fwks.tasks"></span><div class="section" id="fwks-tasks">
+<h2>fwks.tasks<a class="headerlink" href="#fwks-tasks" title="Permalink to this headline">¶</a></h2>
+<p>Module responsible for scheduling the computations. Each type of task may be configured and then run in sequence.
+Useful for creation of batches of jobs.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">fwks</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="modelBuilding.html">     Model building</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modelLifecycle.html">     Model lifecycle</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">     Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-main">fwks.__main__</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-dataset">fwks.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-installer">fwks.installer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-metricization">fwks.metricization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model">model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-stage">fwks.stage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-tasks">fwks.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="status.html">     Project status</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="modelLifecycle.html" title="previous chapter">Model lifecycle - training, evaluation and deployment</a></li>
+      <li>Next: <a href="status.html" title="next chapter">Project status</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Paweł Tomasik.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/reference.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>fwks.tasks &#8212; fwks 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for fwks.tasks</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">keras</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">fwks.model</span> <span class="k">as</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">fwks.dataset</span> <span class="k">as</span> <span class="nn">dataset</span>
+<span class="kn">import</span> <span class="nn">fwks.metricization</span> <span class="k">as</span> <span class="nn">metricization</span>
+
+<span class="kn">from</span> <span class="nn">fwks.miscellanea</span> <span class="k">import</span> <span class="n">StopOnConvergence</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TODO:</span>
+<span class="sd">- saving // loading</span>
+<span class="sd">- running the network</span>
+<span class="sd">- creation of chains for language models</span>
+<span class="sd">- test coverage</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    
+    <span class="n">_instances</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="o">.</span><span class="n">keys</span><span class="p">())]</span>
+    
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+        <span class="n">new_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;implemented&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="n">new_dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dct</span><span class="p">)</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">new_dct</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">return</span> <span class="n">item</span>
+    
+    
+<span class="k">def</span> <span class="nf">make_training_task</span><span class="p">(</span>
+        <span class="n">noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">evaluation_metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">evaluation_selection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+    <span class="c1"># TODO: add training using noisy instead of clean</span>
+    <span class="n">_evaluation_selection</span> <span class="o">=</span> <span class="n">evaluation_selection</span>
+
+
+    <span class="k">class</span> <span class="nc">AbstractModelTraining</span><span class="p">(</span><span class="n">Task</span><span class="p">):</span>
+    
+        <span class="n">how_much</span> <span class="o">=</span> <span class="mi">9000</span>
+        <span class="n">noise_gen</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="n">epochs</span> <span class="o">=</span> <span class="mi">250</span>
+        <span class="n">from_path</span> <span class="o">=</span> <span class="s2">&quot;datasets/clarin-long/data&quot;</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">evaluation_metrics</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">evaluation_selection</span> <span class="o">=</span> <span class="n">_evaluation_selection</span>
+
+        <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+            <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span>
+            <span class="n">_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span>
+            <span class="n">_evaluation_selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluation_selection</span>
+            
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">noise_gen</span><span class="o">=</span><span class="n">this</span><span class="o">.</span><span class="n">noise_gen</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">loader_adapter</span> <span class="o">=</span> <span class="s2">&quot;clarin&quot;</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">get_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">dset</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="s2">&quot;model.zip&quot;</span><span class="p">))</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">()</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">select_first</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">how_much</span><span class="p">)</span>
+                <span class="n">am</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_acoustic_model</span><span class="p">()</span>
+                <span class="n">am</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">epochs</span>
+                <span class="n">am</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="n">am</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+                <span class="n">am</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="p">:</span>
+                    <span class="n">metric_obj</span> <span class="o">=</span> <span class="n">metricization</span><span class="o">.</span><span class="n">TrainedModelMetricization</span><span class="p">(</span><span class="n">am</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="p">)</span>
+                    <span class="n">results</span> <span class="o">=</span> <span class="n">metric_obj</span><span class="o">.</span><span class="n">on_dataset</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_evaluation_selection</span><span class="p">)</span>
+                    <span class="n">results</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+                <span class="n">am</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="s2">&quot;model.zip&quot;</span><span class="p">),</span> <span class="n">save_full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Task done!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+                    <span class="n">am</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">AcousticModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="s2">&quot;model.zip&quot;</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="n">am</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="n">show</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cannot find the model archive - aborting&quot;</span><span class="p">)</span>
+
+            <span class="n">new_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="n">run</span><span class="p">,</span> <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="n">validate</span><span class="p">,</span> <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span> 
+                       <span class="s2">&quot;how_much&quot;</span><span class="p">:</span> <span class="n">this</span><span class="o">.</span><span class="n">how_much</span><span class="p">,</span> <span class="s2">&quot;get_dataset&quot;</span><span class="p">:</span> <span class="n">get_dataset</span><span class="p">,</span>
+                       <span class="s2">&quot;_metrics&quot;</span><span class="p">:</span> <span class="n">_metrics</span><span class="p">,</span> <span class="s2">&quot;_evaluation_selection&quot;</span><span class="p">:</span> <span class="n">_evaluation_selection</span><span class="p">}</span>
+            <span class="n">new_dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dct</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">new_dct</span><span class="p">)</span>
+        
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span> <span class="nf">add_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+
+    <span class="n">metaclass</span> <span class="o">=</span> <span class="n">AbstractModelTraining</span>    
+    <span class="k">return</span> <span class="n">metaclass</span>
+
+<span class="n">AbstractModelTraining</span> <span class="o">=</span> <span class="n">make_training_task</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">make_ab_feature_test</span><span class="p">(</span><span class="n">noise_gen</span><span class="p">):</span>
+    <span class="n">_noise_gen</span> <span class="o">=</span> <span class="n">noise_gen</span>
+    
+    <span class="k">class</span> <span class="nc">AbstractABTraining</span><span class="p">(</span><span class="n">Task</span><span class="p">):</span>
+    
+        <span class="n">how_much</span> <span class="o">=</span> <span class="mi">9000</span>
+        <span class="n">noise_gen</span> <span class="o">=</span> <span class="n">_noise_gen</span>
+        <span class="n">from_path</span> <span class="o">=</span> <span class="s2">&quot;datasets/clarin-long/data&quot;</span>
+
+        <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+            <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">noise_gen</span><span class="o">=</span><span class="n">this</span><span class="o">.</span><span class="n">noise_gen</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">loader_adapter</span> <span class="o">=</span> <span class="s2">&quot;clarin&quot;</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">get_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">dset</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">()</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">select_first</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">how_much</span><span class="p">)</span>
+                <span class="n">am</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_acoustic_model</span><span class="p">()</span>
+                <span class="n">mapping_generator</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">MappingGenerator</span><span class="p">(</span><span class="n">am</span><span class="o">.</span><span class="n">stages</span><span class="p">)</span>             
+                <span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping_generator</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="s2">&quot;noisy&quot;</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shape of the data: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+                <span class="n">metric_obj</span> <span class="o">=</span> <span class="n">metricization</span><span class="o">.</span><span class="n">MetricizationAB</span><span class="p">([</span>
+                    <span class="n">metricization</span><span class="o">.</span><span class="n">CosineMetric</span><span class="p">(),</span>
+                    <span class="n">metricization</span><span class="o">.</span><span class="n">EuclidMetric</span><span class="p">(),</span>
+                    <span class="n">metricization</span><span class="o">.</span><span class="n">ManhattanMetric</span><span class="p">()</span>
+                <span class="p">])</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dset</span><span class="o">.</span><span class="n">noisy</span><span class="p">)</span>
+                <span class="n">metric_obj</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+                    <span class="n">dset</span><span class="o">.</span><span class="n">clean</span><span class="p">,</span> <span class="n">dset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">,</span>
+                    <span class="n">dset</span><span class="o">.</span><span class="n">noisy</span><span class="p">,</span> <span class="n">dset</span><span class="o">.</span><span class="n">noisy_lens</span>
+                <span class="p">)</span>
+                <span class="n">metric_obj</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Task done!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+            <span class="n">new_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="n">run</span><span class="p">,</span> <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="n">validate</span><span class="p">,</span> <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span> 
+                       <span class="s2">&quot;how_much&quot;</span><span class="p">:</span> <span class="n">this</span><span class="o">.</span><span class="n">how_much</span><span class="p">,</span> <span class="s2">&quot;get_dataset&quot;</span><span class="p">:</span> <span class="n">get_dataset</span><span class="p">}</span>
+            <span class="n">new_dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dct</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">new_dct</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">AbstractABTraining</span>
+
+
+<span class="k">def</span> <span class="nf">make_feature_learnability</span><span class="p">(</span><span class="n">noise_gen</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">_noise_gen</span> <span class="o">=</span> <span class="n">noise_gen</span>
+
+    <span class="k">class</span> <span class="nc">FeatureLearnabilityTask</span><span class="p">(</span><span class="n">Task</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        classmethods:</span>
+<span class="sd">        get_mapping</span>
+<span class="sd">        get_mapper_network(mapping_size)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">how_much</span> <span class="o">=</span> <span class="mi">9000</span>
+        <span class="n">noise_gen</span> <span class="o">=</span> <span class="n">_noise_gen</span>
+        <span class="n">from_path</span> <span class="o">=</span> <span class="s2">&quot;datasets/clarin-long/data&quot;</span>
+
+        <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+            <span class="n">this</span> <span class="o">=</span> <span class="bp">self</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">noise_gen</span><span class="o">=</span><span class="n">this</span><span class="o">.</span><span class="n">noise_gen</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">loader_adapter</span> <span class="o">=</span> <span class="s2">&quot;clarin&quot;</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">get_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">dset</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="n">dset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">()</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">select_first</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">how_much</span><span class="p">)</span>
+                <span class="n">am</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mapping</span><span class="p">()</span>
+                <span class="n">mapping_generator</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">MappingGenerator</span><span class="p">(</span><span class="n">am</span><span class="o">.</span><span class="n">stages</span><span class="p">)</span>
+                <span class="n">mapping</span> <span class="o">=</span> <span class="n">mapping_generator</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">])</span>
+                <span class="n">clean</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">clean</span>
+
+                <span class="n">dset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">()</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">select_first</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">how_much</span><span class="p">)</span>
+                <span class="n">am</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_windowing</span><span class="p">()</span>
+                <span class="n">mapping_generator_2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">MappingGenerator</span><span class="p">(</span><span class="n">am</span><span class="o">.</span><span class="n">stages</span><span class="p">)</span>
+                <span class="n">mapping_2</span> <span class="o">=</span> <span class="n">mapping_generator_2</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+                <span class="n">dset</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mapping_2</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">])</span>
+                <span class="n">sources</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">clean</span>
+                <span class="c1"># print(clean.shape)</span>
+                <span class="c1"># print(sources.shape)</span>
+                
+                <span class="n">mapper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mapper_network</span><span class="p">(</span><span class="n">sources</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">mapper</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="s1">&#39;mse&#39;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s1">&#39;adam&#39;</span><span class="p">)</span>
+                <span class="n">mapper</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+                <span class="n">valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">sources</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">0.8</span>
+                <span class="n">mapper</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sources</span><span class="p">[</span><span class="o">~</span><span class="n">valid</span><span class="p">],</span> <span class="n">clean</span><span class="p">[</span><span class="o">~</span><span class="n">valid</span><span class="p">],</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+                    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+                        <span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">TerminateOnNaN</span><span class="p">(),</span>
+                        <span class="n">StopOnConvergence</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                    <span class="p">],</span>
+                    <span class="n">validation_data</span><span class="o">=</span><span class="p">[</span><span class="n">sources</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">clean</span><span class="p">[</span><span class="n">valid</span><span class="p">]],</span>
+                    <span class="n">epochs</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Task done!</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="k">pass</span>
+            
+            <span class="nd">@classmethod</span>
+            <span class="k">def</span> <span class="nf">get_windowing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="n">mdl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mapping</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">mdl</span><span class="o">.</span><span class="vm">__class__</span><span class="p">([</span><span class="n">mdl</span><span class="o">.</span><span class="n">stages</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+            <span class="n">new_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="n">run</span><span class="p">,</span> <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="n">validate</span><span class="p">,</span> <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+                       <span class="s2">&quot;how_much&quot;</span><span class="p">:</span> <span class="n">this</span><span class="o">.</span><span class="n">how_much</span><span class="p">,</span> <span class="s2">&quot;get_dataset&quot;</span><span class="p">:</span> <span class="n">get_dataset</span><span class="p">,</span>
+                      <span class="s2">&quot;get_windowing&quot;</span><span class="p">:</span> <span class="n">get_windowing</span><span class="p">}</span>
+            <span class="k">assert</span> <span class="s2">&quot;get_mapping&quot;</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="s2">&quot;get_mapper_network&quot;</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="n">new_dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dct</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">new_dct</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">FeatureLearnabilityTask</span>
+
+
+<span class="n">FeatureLearnabilityTask</span> <span class="o">=</span> <span class="n">make_feature_learnability</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">fwks</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modelBuilding.html">     Model building</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modelLifecycle.html">     Model lifecycle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">     Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../status.html">     Project status</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Paweł Tomasik.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

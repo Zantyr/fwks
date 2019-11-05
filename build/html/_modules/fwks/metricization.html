@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>fwks.metricization &#8212; fwks 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for fwks.metricization</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">fwks.metricization</span>
+<span class="sd">==================</span>
+
+<span class="sd">This modules contains metric and objects that perform the measurements of the models</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">editdistance</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">tqdm</span>
+
+<span class="kn">from</span> <span class="nn">fwks.model</span> <span class="k">import</span> <span class="n">MappingGenerator</span>
+<span class="kn">from</span> <span class="nn">fwks.stage</span> <span class="k">import</span> <span class="n">ToDo</span>
+
+
+<div class="viewcode-block" id="Alphabet"><a class="viewcode-back" href="../../reference.html#fwks.metricization.Alphabet">[docs]</a><span class="k">class</span> <span class="nc">Alphabet</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used for Phoneme confusion distance</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<span class="k">class</span> <span class="nc">Metric</span><span class="p">:</span>
+    <span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="s2">&quot;dirty&quot;</span><span class="p">]</span>
+    <span class="n">use_test_data</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Plain metric is not callable&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CosineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">(</span><span class="n">clean</span> <span class="o">*</span> <span class="n">dirty</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">2e-12</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dirty</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">2e-12</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">EuclidMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">ManhattanMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    
+
+<div class="viewcode-block" id="WER"><a class="viewcode-back" href="../../reference.html#fwks.metricization.WER">[docs]</a><span class="k">class</span> <span class="nc">WER</span><span class="p">(</span><span class="n">ToDo</span><span class="p">):</span>
+    <span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;predicted_phones&quot;</span><span class="p">,</span> <span class="s2">&quot;transcriptions&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="n">dictionary</span></div>
+        
+
+<span class="k">class</span> <span class="nc">PER</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="n">_requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;predicted_phones&quot;</span><span class="p">,</span> <span class="s2">&quot;transcriptions&quot;</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remove_symbols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mdl_symbol_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dset_all_phones</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_symbols</span> <span class="o">=</span> <span class="n">remove_symbols</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_requires</span><span class="p">[:]</span>
+        <span class="k">if</span> <span class="n">dset_all_phones</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_phones</span> <span class="o">=</span> <span class="n">dset_all_phones</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;dataset:all_phones&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mdl_symbol_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span> <span class="o">=</span> <span class="n">mdl_symbol_map</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;model:symbol_map&quot;</span><span class="p">)</span>
+            
+    <span class="k">def</span> <span class="nf">supply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicted_phones</span><span class="p">,</span> <span class="n">transcriptions</span><span class="p">,</span> <span class="o">**</span><span class="n">rest</span><span class="p">):</span>
+        <span class="c1"># predicted_phones = [x[0] for x in predicted_phones]</span>
+        <span class="n">old_predicted_phones</span> <span class="o">=</span> <span class="n">predicted_phones</span>
+        <span class="n">predicted_phones</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">all_phones</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">predicted_phones</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_symbols</span><span class="p">]</span>
+        <span class="n">transcriptions</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">transcriptions</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_phones</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_symbols</span><span class="p">]</span> 
+        <span class="c1"># 2print(old_predicted_phones, predicted_phones, list(transcriptions))</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">editdistance</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">predicted_phones</span><span class="p">,</span> <span class="n">transcriptions</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">transcriptions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist</span>
+
+
+<span class="k">class</span> <span class="nc">PhonemeClassConfusion</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">Metricization</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">compile_mapping</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="n">MappingGenerator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compile_mapping</span> <span class="o">=</span> <span class="n">compile_mapping</span>
+    
+    <span class="k">def</span> <span class="nf">add_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">on_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="s2">&quot;noisy&quot;</span><span class="p">])</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">)):</span>
+            <span class="n">clean</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+            <span class="n">noisy</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">noisy</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">noisy_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">clean</span><span class="p">,</span> <span class="n">noisy</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    
+    
+<span class="k">class</span> <span class="nc">RecordMetricization</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metrics</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+    
+    <span class="k">def</span> <span class="nf">add_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">on_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_mapping</span><span class="p">()</span>
+        <span class="c1"># requirements of metrics should be aggregated</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c1"># [&quot;clean&quot;, &quot;noisy&quot;]</span>
+        <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+            <span class="n">requirements</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">requires</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">requirements</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;prediction&quot;</span><span class="p">)))</span>   <span class="c1"># should it be regenerated?</span>
+        <span class="c1"># need to append predictions to the dataset if required</span>
+        <span class="k">if</span> <span class="s2">&quot;prediction&quot;</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+            <span class="n">prediction</span><span class="p">,</span> <span class="n">prediction_lens</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">)):</span>
+                <span class="n">clean</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+                <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span>  <span class="c1"># flag for no translation of strings...</span>
+                <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span>
+                <span class="n">prediction_lens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">))</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">)):</span>
+            <span class="c1"># generate according to requirements</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+                <span class="n">required</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">):</span>
+                    <span class="n">required_len</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">)</span>
+                    <span class="n">required</span> <span class="o">=</span> <span class="n">required</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">required_len</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">required</span> <span class="o">=</span> <span class="n">required</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="n">required</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">MetricResult</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">results</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">dill</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">dill</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> +- </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">())</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+            
+            
+<span class="k">class</span> <span class="nc">MetricizationAB</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metrics</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">def</span> <span class="nf">add_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">clean_lens</span><span class="p">,</span> <span class="n">noisy</span><span class="p">,</span> <span class="n">noisy_lens</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">clean_rec</span><span class="p">,</span> <span class="n">clean_len</span><span class="p">,</span> <span class="n">noisy_rec</span><span class="p">,</span> <span class="n">noisy_len</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">clean</span><span class="p">,</span> <span class="n">clean_lens</span><span class="p">,</span> <span class="n">noisy</span><span class="p">,</span> <span class="n">noisy_lens</span><span class="p">),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">clean_lens</span><span class="p">)):</span>
+            <span class="n">clean_rec</span> <span class="o">=</span> <span class="n">clean_rec</span><span class="p">[:</span><span class="n">clean_len</span><span class="p">]</span>
+            <span class="n">noisy_rec</span> <span class="o">=</span> <span class="n">noisy_rec</span><span class="p">[:</span><span class="n">noisy_len</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">clean_rec</span><span class="p">,</span> <span class="n">noisy_rec</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> +- </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()))</span>
+            
+
+<span class="k">class</span> <span class="nc">TrainedModelMetricization</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metrics</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">def</span> <span class="nf">add_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="c1"># requirements of metrics should be aggregated</span>
+        <span class="n">requirements</span><span class="p">,</span> <span class="n">data_required</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+            <span class="n">requirements</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">requires</span><span class="p">)</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">requirements</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">[:]:</span>
+            <span class="c1"># print(req)</span>
+            <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">req</span><span class="p">:</span>
+                <span class="c1"># print(&quot;removing&quot;)</span>
+                <span class="k">if</span> <span class="n">req</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;dataset&quot;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">req</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">req</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Strange requirement to metric: &quot;</span> <span class="o">+</span> <span class="n">req</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">metric</span><span class="o">.</span><span class="n">requires</span><span class="p">:</span>
+                        <span class="n">metric</span><span class="o">.</span><span class="n">supply</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="n">requirements</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">req</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;prediction&quot;</span><span class="p">,</span> <span class="s2">&quot;predicted_phones&quot;</span><span class="p">]:</span>
+                <span class="n">data_required</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span><span class="p">)</span>
+                <span class="n">data_required</span><span class="p">[</span><span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">requirements</span><span class="p">,</span> <span class="n">data_required</span>        
+        
+    <span class="k">def</span> <span class="nf">on_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">requirements</span><span class="p">,</span> <span class="n">data_required</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_requirements</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">selectables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data_required</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="c1"># print(requirements, data_required)</span>
+        <span class="k">if</span> <span class="n">partial</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subselection</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">)),</span> <span class="n">partial</span><span class="p">)</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">subselection</span>
+        <span class="k">if</span> <span class="s2">&quot;prediction&quot;</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+            <span class="n">prediction</span><span class="p">,</span> <span class="n">prediction_lens</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">selection</span><span class="p">()):</span>
+                <span class="n">clean</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+                <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_raw</span><span class="p">(</span><span class="n">clean</span><span class="p">,</span> <span class="n">use_mapping</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span>
+                <span class="n">prediction_lens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">))</span>
+            <span class="n">data_required</span><span class="p">[</span><span class="s2">&quot;prediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction</span>
+            <span class="n">data_required</span><span class="p">[</span><span class="s2">&quot;prediction_lens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction_lens</span>
+        <span class="k">if</span> <span class="s2">&quot;predicted_phones&quot;</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+            <span class="n">predicted_phones</span><span class="p">,</span> <span class="n">predicted_phones_lens</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">selection</span><span class="p">()):</span>
+                <span class="n">clean</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">clean_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
+                <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">clean</span><span class="p">,</span> <span class="n">literal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">use_mapping</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">predicted_phones</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">preds</span><span class="p">)</span>
+                <span class="n">predicted_phones_lens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">))</span>
+            <span class="n">data_required</span><span class="p">[</span><span class="s2">&quot;predicted_phones&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predicted_phones</span>
+            <span class="n">data_required</span><span class="p">[</span><span class="s2">&quot;predicted_phones_lens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predicted_phones_lens</span>
+        <span class="c1"># calculate proper predictions</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Calculating metrics...&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">sel</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">selection</span><span class="p">())):</span>
+            <span class="c1"># generate data slices according to requirements</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+                <span class="n">selector</span> <span class="o">=</span> <span class="n">sel</span> <span class="k">if</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">selectables</span> <span class="k">else</span> <span class="n">ix</span>
+                <span class="c1"># print(ix, req, selector)</span>
+                <span class="n">required</span> <span class="o">=</span> <span class="n">data_required</span><span class="p">[</span><span class="n">req</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">):</span>
+                    <span class="n">required_len</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">)</span>
+                    <span class="n">required</span> <span class="o">=</span> <span class="n">required</span><span class="p">[</span><span class="n">selector</span><span class="p">,</span> <span class="p">:</span><span class="n">required_len</span><span class="p">[</span><span class="n">selector</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">required</span> <span class="o">=</span> <span class="n">required</span><span class="p">[</span><span class="n">selector</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">):</span>
+                        <span class="n">required_len</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">req</span> <span class="o">+</span> <span class="s2">&quot;_lens&quot;</span><span class="p">)</span>
+                        <span class="n">required</span> <span class="o">=</span> <span class="n">required</span><span class="p">[:</span><span class="n">required_len</span><span class="p">[</span><span class="n">selector</span><span class="p">]]</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="n">required</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">fwks</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modelBuilding.html">     Model building</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modelLifecycle.html">     Model lifecycle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">     Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../status.html">     Project status</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Paweł Tomasik.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

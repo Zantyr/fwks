@@ -1,7 +1,8 @@
 """
-To do:
-- WER
-- PER
+fwks.metricization
+==================
+
+This modules contains metric and objects that perform the measurements of the models
 """
 
 import dill
