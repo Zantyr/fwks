@@ -23,7 +23,7 @@ from .stage_time_domain import (GammaChirp, TimeRoex, TrainableConvolve, CARFAC,
 )
 from .stage_neural import (EarlyDNN, EarlyConv2D, EarlyConv1D, SparseDNN,
     AntimonotonyLayer, RNN, LaterConv1D, LaterDNN, LaterSparse1D, TimeWarpingRNN,
-    TimeWarpingCNN, Core, CNN2D, LearnableFourierFBanks
+    TimeWarpingCNN, Core, CNN2D, LearnableFourierFBanks, Columns
 )
 from .stage_misc import LogPower, ConcatFeatures
 from .stage_normalizers import MeanStdNormalizer

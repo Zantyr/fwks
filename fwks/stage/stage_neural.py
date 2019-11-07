@@ -275,3 +275,25 @@ class LaterDNN(DNN):
 
 class LaterSparse1D(SparseCNN1D):
     pass
+
+
+class Columns(Neural):
+    """
+    Joins neural layers
+    """
+    def __init__(self, feature_transforms, mapping):
+        self.feature_transforms = [x for x in feature_transforms]
+        self.mapping = mapping
+        self.model_ref = None
+
+    def get_graph(self):
+        def maker(inp):
+            columns = []
+            for column in self.feature_transforms:
+                next_item = inp
+                for item in column:
+                    next_item = item.get_graph()(next_item)
+                columns.append(next_item)
+            return keras.layers.Lambda(lambda x: self.mapping(self.model_ref, x))(columns)
+        return maker
+

@@ -79,15 +79,25 @@ class Dataset:
         self._hash = hashlib.sha512(str(self.rec_fnames).encode("utf-8")).digest().hex()[:16]
             
     def select_first(self, count):
-        self.rec_fnames = self.rec_fnames[:count]
-        self.trans_fnames = self.trans_fnames[:count]
-        self.recording_lengths = self.recording_lengths[:count]
+        self.select_slice(None, count)
 
-    def select_random(self, count):
-        selection = random.sample(range(len(self.rec_fnames)), count)
+    def select_indices(self, selection):
         self.rec_fnames = [self.rec_fnames[x] for x in selection]
         self.trans_fnames = [self.trans_fnames[x] for x in selection]
-        self.recording_lengths = [self.recording_lengths[x] for x in selection]     
+        self.recording_lengths = [self.recording_lengths[x] for x in selection]
+        
+    def select_random(self, count):
+        selection = random.sample(range(len(self.rec_fnames)), count)
+        self.select_indices(selection)
+        
+    def select_slice(self, start, end=None, step=None):
+        if isinstance(start, slice):
+            selection = start
+        else:
+            selection = slice(start, end, step)
+        self.rec_fnames = self.rec_fnames[selection]
+        self.trans_fnames = self.trans_fnames[selection]
+        self.recording_lengths = self.recording_lengths[selection]
         
     def generate_dtype(self, mapping):
         dtype = stage.DType("Array", [max(self.recording_lengths)], np.float32)
