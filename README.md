@@ -4,7 +4,7 @@ This library aims to make training, packaging and deploying sound-related servic
 
 ### Use cases
 
-View [build/html/modelLifecycle.html][examples in the documentation]. In general, the full lifecycle of the
+View [examples in the documentation](build/html/modelLifecycle.html). In general, the full lifecycle of the
 model should be implemented:
 
 - data preparation
@@ -25,4 +25,4 @@ required to successfully link and compile some of the dependencies.
 
 ### Development
 
-Long term goąl list is in [build/html/status.html][status page in docs]. 
+Long term goal list is in [status page in docs](build/html/status.html).
