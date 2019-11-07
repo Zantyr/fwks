@@ -5,7 +5,11 @@ All later layers of the network
 import keras
 from keras.initializers import Orthogonal
 from keras.models import Model
-from tensorflow.spectral import dct
+
+try:
+    from tensorflow.spectral import dct
+except ImportError:
+    pass
 
 import keras.backend as K
 import numpy as np

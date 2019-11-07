@@ -1,10 +1,14 @@
 """
-FWKS installer module
-Makes sure everything is distributed and compiled for FWKS to use.
+fwks.installer
+==============
 
-FWKS has some binary dependencies and in order to fully use it, the dependencies should
-be installed in proper way. Installer is a tool that may help in the process (it is however not automatic)
+FWKS installer module.
+
+Makes sure everything is distributed and compiled for FWKS to use. FWKS has some binary dependencies and in order to fully use it, the dependencies should
+be installed in proper way. Installer is a tool that may help in the process (it is however not automatic).
 """
+
+__all__ = ["is_installed", "all_dependencies", "dependency_installer"]
 
 from fwks.installer.meta import Dependency
 

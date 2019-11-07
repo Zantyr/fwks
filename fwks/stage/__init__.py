@@ -1,3 +1,10 @@
+"""
+fwks.stage
+==========
+
+Main set of building blocks for the models.
+"""
+
 import abc
 import gammatone.gtgram
 import hashlib

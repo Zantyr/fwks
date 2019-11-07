@@ -1,3 +1,9 @@
+"""
+acoustic
+========
+Models mapping sound to phonemes or words (or other symbols if needed)
+"""
+
 import dill
 import keras
 import numpy as np
@@ -24,6 +30,11 @@ _defaults = {"tf": tf}    # this should contain everything...
 
 
 class AcousticModel(SoundModel):
+    """
+    Class of acoustic models
+    ------------------------
+    Acoustic model
+    """
 
     def predict(self, recording, literal=True, use_mapping=True, number_of_preds=1, beam_width=2500, multiple_recordings=False):
         predictions = self.predict_raw(recording, use_mapping=use_mapping, multiple_recordings=multiple_recordings)

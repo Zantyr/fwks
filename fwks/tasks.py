@@ -1,3 +1,13 @@
+"""
+fwks.tasks
+==========
+
+Module responsible for scheduling the computations. Each type of task may be configured and then run in sequence.
+Useful for creation of batches of jobs.
+"""
+
+__all__ = ["Task", "make_training_task", "make_ab_feature_test", "make_feature_learnability"]
+
 import keras
 import numpy as np
 import os

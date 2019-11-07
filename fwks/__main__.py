@@ -1,8 +1,10 @@
 """
-Main subprogram of the FWKS module
+fwks.__main__
+=============
 
-install
-service model.zip
+Main subprogram of the FWKS module. This function allows to call the fwks submodule and perform
+operations including installation of library, testing the dependencies, running models and deploying them
+as applications.
 """
 
 import argparse

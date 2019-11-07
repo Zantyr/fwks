@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>fwks.model.acoustic &#8212; fwks 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for fwks.model.acoustic</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">acoustic</span>
+<span class="sd">========</span>
+<span class="sd">Models mapping sound to phonemes or words (or other symbols if needed)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">dill</span>
+<span class="kn">import</span> <span class="nn">keras</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+
+<span class="kn">import</span> <span class="nn">keras.backend</span> <span class="k">as</span> <span class="nn">K</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">fwks.stage</span> <span class="k">import</span> <span class="n">Neural</span><span class="p">,</span> <span class="n">Analytic</span><span class="p">,</span> <span class="n">Loss</span><span class="p">,</span> <span class="n">DType</span>
+<span class="kn">from</span> <span class="nn">.meta</span> <span class="k">import</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">ItemLoader</span><span class="p">,</span> <span class="n">SoundModel</span><span class="p">,</span> <span class="n">MappingGenerator</span>
+<span class="kn">from</span> <span class="nn">fwks.miscellanea</span> <span class="k">import</span> <span class="n">PeekGradients</span><span class="p">,</span> <span class="n">StopOnConvergence</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pynini</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Cannot import pynini&quot;</span><span class="p">)</span>
+
+<span class="n">_defaults</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tf&quot;</span><span class="p">:</span> <span class="n">tf</span><span class="p">}</span>    <span class="c1"># this should contain everything...</span>
+
+
+<div class="viewcode-block" id="AcousticModel"><a class="viewcode-back" href="../../../reference.html#fwks.model.AcousticModel">[docs]</a><span class="k">class</span> <span class="nc">AcousticModel</span><span class="p">(</span><span class="n">SoundModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class of acoustic models</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    Acoustic model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recording</span><span class="p">,</span> <span class="n">literal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">number_of_preds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beam_width</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span> <span class="n">multiple_recordings</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_raw</span><span class="p">(</span><span class="n">recording</span><span class="p">,</span> <span class="n">use_mapping</span><span class="o">=</span><span class="n">use_mapping</span><span class="p">,</span> <span class="n">multiple_recordings</span><span class="o">=</span><span class="n">multiple_recordings</span><span class="p">)</span>
+        <span class="n">decoded</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">ctc_decode</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="p">[</span><span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">greedy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">beam_width</span><span class="o">=</span><span class="n">beam_width</span><span class="p">,</span> <span class="n">top_paths</span><span class="o">=</span><span class="n">number_of_preds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">literal</span><span class="p">:</span>
+            <span class="c1"># print(decoded)</span>
+            <span class="n">all_translations</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">recording</span> <span class="ow">in</span> <span class="p">(</span><span class="n">decoded</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">decoded</span><span class="p">[</span><span class="mi">0</span><span class="p">]))):</span>
+                <span class="n">recording</span> <span class="o">=</span> <span class="n">recording</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">session</span><span class="o">=</span><span class="n">K</span><span class="o">.</span><span class="n">get_session</span><span class="p">())</span>
+                <span class="c1"># print(recording)</span>
+                <span class="n">rec_translations</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="n">recording</span><span class="p">:</span>
+                    <span class="n">rec_translations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">attempt</span><span class="p">])</span>
+                <span class="n">all_translations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec_translations</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">all_translations</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">decoded</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">session</span><span class="o">=</span><span class="n">K</span><span class="o">.</span><span class="n">get_session</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">to_wfst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recording</span><span class="p">):</span>
+        <span class="n">phonemes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_raw</span><span class="p">(</span><span class="n">recording</span><span class="p">)</span>
+        <span class="n">EPSILON</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">fst</span> <span class="o">=</span> <span class="n">pynini</span><span class="o">.</span><span class="n">Fst</span><span class="p">()</span>
+        <span class="n">init</span> <span class="o">=</span> <span class="n">fst</span><span class="o">.</span><span class="n">add_state</span><span class="p">()</span>
+        <span class="n">fst</span><span class="o">.</span><span class="n">set_start</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+        <span class="n">heads</span> <span class="o">=</span> <span class="p">[(</span><span class="n">init</span><span class="p">,</span> <span class="n">EPSILON</span><span class="p">)]</span>
+        <span class="n">num_of_letters</span> <span class="o">=</span> <span class="n">phonemes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">phonemes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">letters</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_of_letters</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">fst</span><span class="o">.</span><span class="n">add_state</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">letters</span><span class="p">]</span>
+            <span class="n">log_phonemes</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">phonemes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">entering_state</span><span class="p">,</span> <span class="n">head</span> <span class="ow">in</span> <span class="n">heads</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">letter</span><span class="p">,</span> <span class="n">letter_state</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">letters</span><span class="p">,</span> <span class="n">states</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">letter</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">letters</span><span class="p">):</span>
+                        <span class="n">letter</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="c1"># letter_state = fst.add_state()</span>
+                    <span class="n">output_sign</span> <span class="o">=</span> <span class="n">head</span> <span class="k">if</span> <span class="n">head</span> <span class="o">!=</span> <span class="n">letter</span> <span class="k">else</span> <span class="mi">0</span>
+                    <span class="n">weight</span> <span class="o">=</span> <span class="n">log_phonemes</span><span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">letter</span><span class="p">]</span>
+                    <span class="n">fst</span><span class="o">.</span><span class="n">add_arc</span><span class="p">(</span><span class="n">entering_state</span><span class="p">,</span> <span class="n">pynini</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span>
+                        <span class="n">letter</span><span class="p">,</span> <span class="n">output_sign</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">letter_state</span><span class="p">))</span>
+            <span class="n">heads</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">letters</span><span class="p">))</span>
+        <span class="p">[</span><span class="n">fst</span><span class="o">.</span><span class="n">set_final</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">heads</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+            <span class="n">fst</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">fst</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">built</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&lt;Trained acoustic model with loss </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">statistics</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&lt;Untrained acoustic model&gt;&quot;</span>
+
+    <span class="fm">__repr__</span> <span class="o">=</span> <span class="fm">__str__</span>
+
+    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">built</span><span class="p">:</span>
+            <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">statistics</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+            <span class="n">docstring</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;--------</span><span class="se">\n</span><span class="s2">Trained acoustic model named </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;\n</span><span class="s2">Dataset signature: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="s2">&quot;Dataset train-valid-test selector signature: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Training time: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="s2">&quot;Model complexity: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Statistics:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="s2">&quot;    </span><span class="si">{}</span><span class="se">\n</span><span class="s2">--------&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_signature</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_signature</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">building_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">complexity</span><span class="p">,</span> <span class="n">statstring</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">docstring</span> <span class="o">=</span> <span class="s2">&quot;Untrained acoustic model named </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">docstring</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">docstring</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">fwks</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modelBuilding.html">     Model building</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modelLifecycle.html">     Model lifecycle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">     Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../status.html">     Project status</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Paweł Tomasik.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
