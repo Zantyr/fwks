@@ -32,8 +32,8 @@ _defaults = {"tf": tf}    # this should contain everything...
 class AcousticModel(SoundModel):
     """
     Class of acoustic models
-    ------------------------
-    Acoustic model
+
+    Builds a model that either: a) maps the sound to another representatioon; b) predicts a sequence of events from the audio
     """
 
     def predict(self, recording, literal=True, use_mapping=True, number_of_preds=1, beam_width=2500, multiple_recordings=False):

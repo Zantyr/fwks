@@ -62,7 +62,12 @@
         <span class="k">return</span> <span class="n">mapped</span>
 
 
-<span class="k">class</span> <span class="nc">MappingGenerator</span><span class="p">:</span>
+<div class="viewcode-block" id="MappingGenerator"><a class="viewcode-back" href="../../../reference.html#fwks.model.MappingGenerator">[docs]</a><span class="k">class</span> <span class="nc">MappingGenerator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class takes a list of stages and processes it to produce representation mapping, networks and</span>
+<span class="sd">    other constituents of models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="n">representation_counter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stages</span> <span class="o">=</span> <span class="n">stages</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">representation_mapping</span> <span class="o">=</span> <span class="kc">None</span>
@@ -105,15 +110,11 @@
         <span class="k">return</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">train_network</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">loss</span>
 
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">dataset</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">dataset</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
 
-<div class="viewcode-block" id="ItemLoader"><a class="viewcode-back" href="../../../reference.html#fwks.model.ItemLoader">[docs]</a><span class="k">class</span> <span class="nc">ItemLoader</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates loadable item from object</span>
-<span class="sd">    Any pickleability should be done here</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="k">class</span> <span class="nc">ItemLoader</span><span class="p">:</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">builder</span> <span class="o">=</span> <span class="kc">None</span>
@@ -132,7 +133,7 @@
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">builder</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">builder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
 
 
 <span class="k">class</span> <span class="nc">SoundModel</span><span class="p">:</span>

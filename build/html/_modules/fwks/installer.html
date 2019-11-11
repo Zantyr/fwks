@@ -44,6 +44,11 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;is_installed&quot;</span><span class="p">,</span> <span class="s2">&quot;all_dependencies&quot;</span><span class="p">,</span> <span class="s2">&quot;dependency_installer&quot;</span><span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">fwks.installer.meta</span> <span class="k">import</span> <span class="n">Dependency</span>
+<span class="kn">from</span> <span class="nn">fwks.installer.pynini_dep</span> <span class="k">import</span> <span class="n">Pynini</span>
+<span class="kn">from</span> <span class="nn">fwks.installer.sox_dep</span> <span class="k">import</span> <span class="n">Sox</span>
+<span class="kn">from</span> <span class="nn">fwks.installer.pesq_dep</span> <span class="k">import</span> <span class="n">PESQ</span>
+<span class="kn">from</span> <span class="nn">fwks.installer.luigi_dep</span> <span class="k">import</span> <span class="n">Luigi</span>
+<span class="kn">from</span> <span class="nn">fwks.installer.docker_image</span> <span class="k">import</span> <span class="n">DockerImage</span>
 
 
 <div class="viewcode-block" id="is_installed"><a class="viewcode-back" href="../../reference.html#fwks.installer.is_installed">[docs]</a><span class="k">def</span> <span class="nf">is_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>

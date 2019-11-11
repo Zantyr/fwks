@@ -51,8 +51,60 @@ as applications.</p>
 classes meant to find the list of files and load them, forming all required data sources.</p>
 <p>Dataset contains data sources. Data source may be a set of recordings, metadata and so on, indexed by integers
 (as a list or ndarray). Dataset uses a set of adapters to extend the capabilities by loading from diverse paths,
-preparing other versions of data beyond simple set of recordings etc. LoaderAdapter loads instances from
-specific path and MapperAdapter extends the dataset by creating derivatives of the data.</p>
+preparing other versions of data beyond simple set of recordings etc. <code class="docutils literal notranslate"><span class="pre">fwks.dataset.adapters.LoaderAdapter</span></code> loads instances from
+specific path and supplies basic loader functions and <code class="docutils literal notranslate"><span class="pre">fwks.dataset.adapters.MapperAdapter</span></code> extends the dataset by creating derivatives of the data.</p>
+<dl class="class">
+<dt id="fwks.dataset.PlainAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">PlainAdapter</code><span class="sig-paren">(</span><em class="sig-param">root</em>, <em class="sig-param">accepted_sr=16000</em>, <em class="sig-param">throw_on_mismatch=True</em>, <em class="sig-param">n_channels=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/dataset/adapters.html#PlainAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.PlainAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default LoaderAdapter. Loads data from a single directory.
+Every WAVE is loaded as a source recording and matches text files are treated
+as transcriptions.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.dataset.ClarinAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">ClarinAdapter</code><span class="sig-paren">(</span><em class="sig-param">root</em>, <em class="sig-param">accepted_sr=16000</em>, <em class="sig-param">throw_on_mismatch=True</em>, <em class="sig-param">n_channels=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/dataset/adapters.html#ClarinAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.ClarinAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data from Polish Clarin dataset.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.dataset.MixturesMapper">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">MixturesMapper</code><span class="sig-paren">(</span><em class="sig-param">n_mixtures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/dataset/adapters.html#MixturesMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.MixturesMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes clean recordings and produces mixtures of random selection of recordings for separation.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.dataset.Dataset">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">Dataset</code><span class="sig-paren">(</span><em class="sig-param">noise_gen=None</em>, <em class="sig-param">sr=16000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/dataset/dataset.html#Dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dataset represents a collection of recordings, transcripts and other data constituting corpora
+for building and evaluation of the models. This class should aggregate all data that is required
+for those tasks. Adapters specify the way in which to load and prepare the recordings.</p>
+<p>Dataset most often does not store the clean recordings, instead relying on
+storing the transformed representation. The transform is fetched from the model specification.
+In this way, the datasets are never complete without the accompanying model, which specifies
+what is the interpretation of the data.</p>
+<p>Dataset can be seen as key-value mapping between forms of data and the corpora proper. Each value
+is a collection of items, each item is a piece of data corresponding to other items from each key at
+the same index. E.g. dataset contains a collection of 320 clean recordings in STFT form in form of
+a numpy array with shape (320, _, _) and a list of transcriptions, length of list being 320 and each
+item in the list is another list of strings, each string being a single word.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.dataset.SyntheticDataset">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">SyntheticDataset</code><span class="sig-paren">(</span><em class="sig-param">fn='fundamental_freqs'</em>, <em class="sig-param">how_much=320</em>, <em class="sig-param">how_long=160000</em>, <em class="sig-param">what_is_generated=None</em>, <em class="sig-param">sr=16000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/dataset/dataset.html#SyntheticDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.SyntheticDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synthetic dataset represents a collection of data that is generated without underlying files.
+The data serves best for testing the models or training a specific kind of transform.
+This cannot generate realistic speech in general.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.dataset.IteratorDataset">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.dataset.</code><code class="sig-name descname">IteratorDataset</code><a class="reference internal" href="_modules/fwks/dataset/dataset.html#IteratorDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.dataset.IteratorDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dataset class for large or infinite datasets that use generator training interface.
+In progress…</p>
+</dd></dl>
+
 </div>
 <span class="target" id="module-fwks.etc"></span><span class="target" id="module-fwks.installer"></span><div class="section" id="fwks-installer">
 <h2>fwks.installer<a class="headerlink" href="#fwks-installer" title="Permalink to this headline">¶</a></h2>
@@ -83,54 +135,166 @@ has only optional and keyword inputs.</p>
 <h2>fwks.metricization<a class="headerlink" href="#fwks-metricization" title="Permalink to this headline">¶</a></h2>
 <p>This modules contains metric and objects that perform the measurements of the models</p>
 <dl class="class">
-<dt id="fwks.metricization.Alphabet">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">Alphabet</code><a class="reference internal" href="_modules/fwks/metricization.html#Alphabet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.Alphabet" title="Permalink to this definition">¶</a></dt>
-<dd><p>Used for Phoneme confusion distance</p>
+<dt id="fwks.metricization.CosineMetric">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">CosineMetric</code><a class="reference internal" href="_modules/fwks/metricization.html#CosineMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.CosineMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cosine similarity between <code class="docutils literal notranslate"><span class="pre">clean</span></code> and <code class="docutils literal notranslate"><span class="pre">dirty</span></code></p>
 </dd></dl>
 
 <dl class="class">
-<dt id="fwks.metricization.WER">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">WER</code><span class="sig-paren">(</span><em class="sig-param">dictionary</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#WER"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.WER" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="fwks.metricization.EuclidMetric">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">EuclidMetric</code><a class="reference internal" href="_modules/fwks/metricization.html#EuclidMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.EuclidMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Euclid distance between <code class="docutils literal notranslate"><span class="pre">clean</span></code> and <code class="docutils literal notranslate"><span class="pre">dirty</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.ManhattanMetric">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">ManhattanMetric</code><a class="reference internal" href="_modules/fwks/metricization.html#ManhattanMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.ManhattanMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manhattan distance between <code class="docutils literal notranslate"><span class="pre">clean</span></code> and <code class="docutils literal notranslate"><span class="pre">dirty</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.PER">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">PER</code><span class="sig-paren">(</span><em class="sig-param">remove_symbols=None</em>, <em class="sig-param">mdl_symbol_map=None</em>, <em class="sig-param">dset_all_phones=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#PER"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.PER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Phoneme error rate</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.Metricization">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">Metricization</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">compile_mapping=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#Metricization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.Metricization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.TrainedModelMetricization">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">TrainedModelMetricization</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">metrics=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#TrainedModelMetricization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.TrainedModelMetricization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic model metricization class. Applies the metrics to a selection of recordings.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.metricization.MetricizationAB">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.metricization.</code><code class="sig-name descname">MetricizationAB</code><span class="sig-paren">(</span><em class="sig-param">metrics=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/metricization.html#MetricizationAB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.metricization.MetricizationAB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comparison between two models.</p>
+</dd></dl>
 
 </div>
-<span class="target" id="module-fwks.model"></span><div class="section" id="model">
-<h2>model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-fwks.model"></span><div class="section" id="fwks-model">
+<h2>fwks.model<a class="headerlink" href="#fwks-model" title="Permalink to this headline">¶</a></h2>
 <p>Library for all types of models. Model is a single, serializable instance of a pipeline that fulfills particular
 processing job, either from preprocessed or raw data, mostly the latter.</p>
 <p>Models define the mode of training.</p>
 <dl class="class">
 <dt id="fwks.model.AcousticModel">
 <em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">AcousticModel</code><span class="sig-paren">(</span><em class="sig-param">stages</em>, <em class="sig-param">name=None</em>, <em class="sig-param">symbol_map=None</em>, <em class="sig-param">callbacks=None</em>, <em class="sig-param">num_epochs=250</em>, <em class="sig-param">checkpoint_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/acoustic.html#AcousticModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.AcousticModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Acoustic model</p>
+<dd><p>Class of acoustic models</p>
+<p>Builds a model that either: a) maps the sound to another representatioon; b) predicts a sequence of events from the audio</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="fwks.model.ItemLoader">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">ItemLoader</code><span class="sig-paren">(</span><em class="sig-param">item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/meta.html#ItemLoader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.ItemLoader" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates loadable item from object
-Any pickleability should be done here</p>
+<dt id="fwks.model.MappingGenerator">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">MappingGenerator</code><span class="sig-paren">(</span><em class="sig-param">stages</em>, <em class="sig-param">representation_counter=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/meta.html#MappingGenerator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.MappingGenerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class takes a list of stages and processes it to produce representation mapping, networks and
+other constituents of models.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.model.DenoisingModel">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.model.</code><code class="sig-name descname">DenoisingModel</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/model/denoising.html#DenoisingModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.model.DenoisingModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model designed at processing sound. It is equipped with postproceessing methods
+in order to reverse the representation into audio form.</p>
 </dd></dl>
 
 </div>
 <span class="target" id="module-fwks.stage"></span><div class="section" id="fwks-stage">
 <h2>fwks.stage<a class="headerlink" href="#fwks-stage" title="Permalink to this headline">¶</a></h2>
-<p>Main set of building blocks for the models.</p>
+<p>Main set of building blocks for the models. The classes are to be extracted and documented</p>
 <dl class="class">
-<dt id="fwks.stage.AbstractFilter">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">AbstractFilter</code><a class="reference internal" href="_modules/fwks/stage.html#AbstractFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.AbstractFilter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Will represent phase shifts in the cochlea</p>
+<dt id="fwks.stage.RandomSelectionAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">RandomSelectionAdapter</code><span class="sig-paren">(</span><em class="sig-param">valid_percentage=0.1</em>, <em class="sig-param">test_percentage=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_selection_adapter.html#RandomSelectionAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.RandomSelectionAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Divide recordings fully randomly.
+This is generally the default selection adapter</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="fwks.stage.AbstractWavelet">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">AbstractWavelet</code><a class="reference internal" href="_modules/fwks/stage.html#AbstractWavelet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.AbstractWavelet" title="Permalink to this definition">¶</a></dt>
+<dt id="fwks.stage.SpeakerSelectionAdapter">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">SpeakerSelectionAdapter</code><span class="sig-paren">(</span><em class="sig-param">valid_percentage=0.1</em>, <em class="sig-param">test_percentage=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_selection_adapter.html#SpeakerSelectionAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.SpeakerSelectionAdapter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherits: SelectionAdapter</p>
+<p>Then group according to speakers
+Then divide speakers in such a way as to fulfill the percentages</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.CTCLoss">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">CTCLoss</code><span class="sig-paren">(</span><em class="sig-param">optimizer=None</em>, <em class="sig-param">use_noisy=False</em>, <em class="sig-param">selection_adapter=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_loss.html#CTCLoss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.CTCLoss" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="class">
-<dt id="fwks.stage.ExcitationTrace">
-<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">ExcitationTrace</code><a class="reference internal" href="_modules/fwks/stage.html#ExcitationTrace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.ExcitationTrace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add max of current and exponential smoothing of past features at each band</p>
+<dt id="fwks.stage.L2Loss">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">L2Loss</code><span class="sig-paren">(</span><em class="sig-param">optimizer=None</em>, <em class="sig-param">selection_adapter=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_loss.html#L2Loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.L2Loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.TrainableCQT">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">TrainableCQT</code><span class="sig-paren">(</span><em class="sig-param">real=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_transforms.html#TrainableCQT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.TrainableCQT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="fwks.stage.TrainableCQT.new_network">
+<code class="sig-name descname">new_network</code><span class="sig-paren">(</span><em class="sig-param">recording</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_transforms.html#TrainableCQT.new_network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.TrainableCQT.new_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should create a new network giving an Input layer as an input to the model</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.TrainableCZT">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">TrainableCZT</code><a class="reference internal" href="_modules/fwks/stage/stage_transforms.html#TrainableCZT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.TrainableCZT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.CZT">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">CZT</code><span class="sig-paren">(</span><em class="sig-param">win_size=512</em>, <em class="sig-param">hop=128</em>, <em class="sig-param">z=1.0</em>, <em class="sig-param">w=None</em>, <em class="sig-param">real=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_transforms.html#CZT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.CZT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses windowing…
+z=1.0, w=np.exp(1j * 6.28 / 512)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.Window">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">Window</code><span class="sig-paren">(</span><em class="sig-param">size</em>, <em class="sig-param">hop</em>, <em class="sig-param">win_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_preprocessing.html#Window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.Window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Divide recording into uniform overlapping windows
+Those can form a basis to different transforms
+Can apply windowing function</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.EqualLoudnessWeighting">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">EqualLoudnessWeighting</code><span class="sig-paren">(</span><em class="sig-param">kind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_preprocessing.html#EqualLoudnessWeighting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.EqualLoudnessWeighting" title="Permalink to this definition">¶</a></dt>
+<dd><p>IEC 61672:2003
+Based on: <a class="reference external" href="https://gist.github.com/endolith/148112">https://gist.github.com/endolith/148112</a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.PCENScaling">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">PCENScaling</code><span class="sig-paren">(</span><em class="sig-param">sr=16000</em>, <em class="sig-param">hop=128</em>, <em class="sig-param">time_constant=0.4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_preprocessing.html#PCENScaling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.PCENScaling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Per Channel Energy Normalization
+<a class="reference external" href="http://www.justinsalamon.com/uploads/4/3/9/4/4394963/lostanlen_pcen_spl2018.pdf">http://www.justinsalamon.com/uploads/4/3/9/4/4394963/lostanlen_pcen_spl2018.pdf</a>
+Also based on librosa for parameters</p>
+<p>sps.lfilter with [b] [1, b-1] is used to smooth, it is generally an exponential decay filter</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.AdaptiveGainAndCompressor">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">AdaptiveGainAndCompressor</code><span class="sig-paren">(</span><em class="sig-param">sr=16000</em>, <em class="sig-param">hop=128</em>, <em class="sig-param">compression_factor=0.2</em>, <em class="sig-param">time_constant=0.4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_preprocessing.html#AdaptiveGainAndCompressor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.AdaptiveGainAndCompressor" title="Permalink to this definition">¶</a></dt>
+<dd><p>In spectrogram domain</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.OverlapAdd">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">OverlapAdd</code><span class="sig-paren">(</span><em class="sig-param">size</em>, <em class="sig-param">hop</em>, <em class="sig-param">win_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_preprocessing.html#OverlapAdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.OverlapAdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverse of windowing operation</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fwks.stage.CustomNeural">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.stage.</code><code class="sig-name descname">CustomNeural</code><span class="sig-paren">(</span><em class="sig-param">graph</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/stage/stage_meta.html#CustomNeural"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.stage.CustomNeural" title="Permalink to this definition">¶</a></dt>
+<dd><p>Neural models, which have custom implementation.</p>
 </dd></dl>
 
 </div>
@@ -138,6 +302,30 @@ Any pickleability should be done here</p>
 <h2>fwks.tasks<a class="headerlink" href="#fwks-tasks" title="Permalink to this headline">¶</a></h2>
 <p>Module responsible for scheduling the computations. Each type of task may be configured and then run in sequence.
 Useful for creation of batches of jobs.</p>
+<dl class="class">
+<dt id="fwks.tasks.Task">
+<em class="property">class </em><code class="sig-prename descclassname">fwks.tasks.</code><code class="sig-name descname">Task</code><a class="reference internal" href="_modules/fwks/tasks.html#Task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.tasks.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metaclass registering and running tasks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fwks.tasks.make_training_task">
+<code class="sig-prename descclassname">fwks.tasks.</code><code class="sig-name descname">make_training_task</code><span class="sig-paren">(</span><em class="sig-param">noise=None</em>, <em class="sig-param">evaluation_metrics=None</em>, <em class="sig-param">evaluation_selection=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/tasks.html#make_training_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.tasks.make_training_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory of basic model training tasks</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fwks.tasks.make_ab_feature_test">
+<code class="sig-prename descclassname">fwks.tasks.</code><code class="sig-name descname">make_ab_feature_test</code><span class="sig-paren">(</span><em class="sig-param">noise_gen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/tasks.html#make_ab_feature_test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.tasks.make_ab_feature_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for tasks that compare feature transforms on clean and noisy recordings</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fwks.tasks.make_feature_learnability">
+<code class="sig-prename descclassname">fwks.tasks.</code><code class="sig-name descname">make_feature_learnability</code><span class="sig-paren">(</span><em class="sig-param">noise_gen=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fwks/tasks.html#make_feature_learnability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fwks.tasks.make_feature_learnability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a task that uses secondary neural network to learn the feature transform used by the first</p>
+</dd></dl>
+
 </div>
 </div>
 
@@ -167,7 +355,7 @@ Useful for creation of batches of jobs.</p>
 <li class="toctree-l2"><a class="reference internal" href="#fwks-dataset">fwks.dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fwks-installer">fwks.installer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fwks-metricization">fwks.metricization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#model">model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fwks-model">fwks.model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fwks-stage">fwks.stage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fwks-tasks">fwks.tasks</a></li>
 </ul>

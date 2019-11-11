@@ -1,7 +1,13 @@
 from .meta import MappingGenerator, SoundModel
 
 
+# TODO: ...
 class DenoisingModel(SoundModel):
+    """
+    Model designed at processing sound. It is equipped with postproceessing methods
+    in order to reverse the representation into audio form.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._postprocessing = None

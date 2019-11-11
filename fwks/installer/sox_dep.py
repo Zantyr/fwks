@@ -2,7 +2,7 @@ from fwks.installer.meta import Dependency
 
 
 
-class Pynini(metaclass=Dependency):
+class Sox(metaclass=Dependency):
     @classmethod
     def is_installed(self):
         pass

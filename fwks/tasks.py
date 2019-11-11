@@ -27,6 +27,9 @@ TODO:
 
 
 class Task(type):
+    """
+    Metaclass registering and running tasks.
+    """
     
     _instances = {}
     
@@ -47,6 +50,9 @@ def make_training_task(
         evaluation_metrics=None,
         evaluation_selection=None,
     ):
+    """
+    Factory of basic model training tasks
+    """
     # TODO: add training using noisy instead of clean
     _evaluation_selection = evaluation_selection
 
@@ -124,6 +130,10 @@ AbstractModelTraining = make_training_task()
 
 
 def make_ab_feature_test(noise_gen):
+    """
+    Factory for tasks that compare feature transforms on clean and noisy recordings
+    """
+
     _noise_gen = noise_gen
     
     class AbstractABTraining(Task):
@@ -187,6 +197,10 @@ def make_ab_feature_test(noise_gen):
 
 
 def make_feature_learnability(noise_gen=None):
+    """
+    Create a task that uses secondary neural network to learn the feature transform used by the first
+    """
+
     _noise_gen = noise_gen
 
     class FeatureLearnabilityTask(Task):

@@ -31,7 +31,7 @@ if __name__=="__main__":
         status = {k: fwks.installer.is_installed(k) for k in status}
         todos = fwks.meta.ToDo.instances()
         print("Installation status:")
-        for k, v in status:
+        for k, v in status.items():
             print("{}: {}".format(k, v))
         if todos:
             print("{} classes awaiting implementation:".format(len(todos)))

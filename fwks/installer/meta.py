@@ -8,9 +8,9 @@ class Dependency(type):
     _instances = {}
 
     def __new__(cls, name, bases, dct):
-        if any([k not in dict.keys() for k in ["installer", "is_installed"]]):
+        if any([k not in dct.keys() for k in ["installer", "is_installed"]]):
             raise RuntimeError("Registered dependency does not have basic handlers")
-        item = super().__new__(name, bases, dct)
+        item = super().__new__(cls, name, bases, dct)
         cls._instances[name.lower()] = item
         return item
 

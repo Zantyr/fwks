@@ -47,11 +47,8 @@
 <span class="kn">from</span> <span class="nn">fwks.model</span> <span class="k">import</span> <span class="n">MappingGenerator</span>
 <span class="kn">from</span> <span class="nn">fwks.stage</span> <span class="k">import</span> <span class="n">ToDo</span>
 
-
-<div class="viewcode-block" id="Alphabet"><a class="viewcode-back" href="../../reference.html#fwks.metricization.Alphabet">[docs]</a><span class="k">class</span> <span class="nc">Alphabet</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Used for Phoneme confusion distance</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CosineMetric&quot;</span><span class="p">,</span> <span class="s2">&quot;EuclidMetric&quot;</span><span class="p">,</span> <span class="s2">&quot;ManhattanMetric&quot;</span><span class="p">,</span> <span class="s2">&quot;PER&quot;</span><span class="p">,</span>
+           <span class="s2">&quot;Metricization&quot;</span><span class="p">,</span> <span class="s2">&quot;TrainedModelMetricization&quot;</span><span class="p">,</span> <span class="s2">&quot;MetricizationAB&quot;</span><span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">Metric</span><span class="p">:</span>
@@ -66,7 +63,11 @@
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Plain metric is not callable&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">CosineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+<div class="viewcode-block" id="CosineMetric"><a class="viewcode-back" href="../../reference.html#fwks.metricization.CosineMetric">[docs]</a><span class="k">class</span> <span class="nc">CosineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cosine similarity between ``clean`` and ``dirty``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
         <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -74,31 +75,44 @@
             <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">2e-12</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> \
             <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dirty</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">2e-12</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
 
 
-<span class="k">class</span> <span class="nc">EuclidMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+<div class="viewcode-block" id="EuclidMetric"><a class="viewcode-back" href="../../reference.html#fwks.metricization.EuclidMetric">[docs]</a><span class="k">class</span> <span class="nc">EuclidMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Euclid distance between ``clean`` and ``dirty``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
         <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
 
 
-<span class="k">class</span> <span class="nc">ManhattanMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+<div class="viewcode-block" id="ManhattanMetric"><a class="viewcode-back" href="../../reference.html#fwks.metricization.ManhattanMetric">[docs]</a><span class="k">class</span> <span class="nc">ManhattanMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manhattan distance between ``clean`` and ``dirty``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">dirty</span><span class="p">):</span>
         <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">dirty</span> <span class="o">=</span> <span class="n">dirty</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dirty</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">clean</span> <span class="o">-</span> <span class="n">dirty</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
     
 
-<div class="viewcode-block" id="WER"><a class="viewcode-back" href="../../reference.html#fwks.metricization.WER">[docs]</a><span class="k">class</span> <span class="nc">WER</span><span class="p">(</span><span class="n">ToDo</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">WER</span><span class="p">(</span><span class="n">ToDo</span><span class="p">):</span>
+
     <span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;predicted_phones&quot;</span><span class="p">,</span> <span class="s2">&quot;transcriptions&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="n">dictionary</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="n">dictionary</span>
         
 
-<span class="k">class</span> <span class="nc">PER</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+<div class="viewcode-block" id="PER"><a class="viewcode-back" href="../../reference.html#fwks.metricization.PER">[docs]</a><span class="k">class</span> <span class="nc">PER</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Phoneme error rate</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">_requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;predicted_phones&quot;</span><span class="p">,</span> <span class="s2">&quot;transcriptions&quot;</span><span class="p">]</span>
     
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remove_symbols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mdl_symbol_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dset_all_phones</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -125,14 +139,18 @@
         <span class="c1"># 2print(old_predicted_phones, predicted_phones, list(transcriptions))</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">editdistance</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">predicted_phones</span><span class="p">,</span> <span class="n">transcriptions</span><span class="p">)</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">transcriptions</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dist</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
 
 
 <span class="k">class</span> <span class="nc">PhonemeClassConfusion</span><span class="p">:</span>
     <span class="k">pass</span>
 
 
-<span class="k">class</span> <span class="nc">Metricization</span><span class="p">:</span>
+<div class="viewcode-block" id="Metricization"><a class="viewcode-back" href="../../reference.html#fwks.metricization.Metricization">[docs]</a><span class="k">class</span> <span class="nc">Metricization</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">compile_mapping</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
@@ -153,7 +171,7 @@
             <span class="n">noisy</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">noisy</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:</span><span class="n">dataset</span><span class="o">.</span><span class="n">noisy_lens</span><span class="p">[</span><span class="n">ix</span><span class="p">]]</span>
             <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
                 <span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">clean</span><span class="p">,</span> <span class="n">noisy</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
     
     
 <span class="k">class</span> <span class="nc">RecordMetricization</span><span class="p">:</span>
@@ -215,7 +233,11 @@
 
             
             
-<span class="k">class</span> <span class="nc">MetricizationAB</span><span class="p">:</span>
+<div class="viewcode-block" id="MetricizationAB"><a class="viewcode-back" href="../../reference.html#fwks.metricization.MetricizationAB">[docs]</a><span class="k">class</span> <span class="nc">MetricizationAB</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Comparison between two models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metrics</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
@@ -235,10 +257,14 @@
 
     <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> +- </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> +- </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()))</span></div>
             
 
-<span class="k">class</span> <span class="nc">TrainedModelMetricization</span><span class="p">:</span>
+<div class="viewcode-block" id="TrainedModelMetricization"><a class="viewcode-back" href="../../reference.html#fwks.metricization.TrainedModelMetricization">[docs]</a><span class="k">class</span> <span class="nc">TrainedModelMetricization</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic model metricization class. Applies the metrics to a selection of recordings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metrics</span> <span class="ow">or</span> <span class="p">[]</span>
@@ -320,7 +346,7 @@
                 <span class="n">data</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="n">required</span>
             <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
                 <span class="n">results</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MetricResult</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
 </pre></div>
 
           </div>

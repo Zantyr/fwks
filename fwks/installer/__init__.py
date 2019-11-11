@@ -11,6 +11,11 @@ be installed in proper way. Installer is a tool that may help in the process (it
 __all__ = ["is_installed", "all_dependencies", "dependency_installer"]
 
 from fwks.installer.meta import Dependency
+from fwks.installer.pynini_dep import Pynini
+from fwks.installer.sox_dep import Sox
+from fwks.installer.pesq_dep import PESQ
+from fwks.installer.luigi_dep import Luigi
+from fwks.installer.docker_image import DockerImage
 
 
 def is_installed(dependency):

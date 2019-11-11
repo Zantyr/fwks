@@ -14,11 +14,8 @@ import tqdm
 from fwks.model import MappingGenerator
 from fwks.stage import ToDo
 
-
-class Alphabet:
-    """
-    Used for Phoneme confusion distance
-    """
+__all__ = ["CosineMetric", "EuclidMetric", "ManhattanMetric", "PER",
+           "Metricization", "TrainedModelMetricization", "MetricizationAB"]
 
 
 class Metric:
@@ -34,6 +31,10 @@ class Metric:
 
 
 class CosineMetric(Metric):
+    """
+    Cosine similarity between ``clean`` and ``dirty``
+    """
+
     def calculate(self, clean, dirty):
         clean = clean.reshape(clean.shape[0], -1)
         dirty = dirty.reshape(dirty.shape[0], -1)
@@ -45,6 +46,10 @@ class CosineMetric(Metric):
 
 
 class EuclidMetric(Metric):
+    """
+    Euclid distance between ``clean`` and ``dirty``
+    """
+
     def calculate(self, clean, dirty):
         clean = clean.reshape(clean.shape[0], -1)
         dirty = dirty.reshape(dirty.shape[0], -1)
@@ -52,6 +57,10 @@ class EuclidMetric(Metric):
 
 
 class ManhattanMetric(Metric):
+    """
+    Manhattan distance between ``clean`` and ``dirty``
+    """
+
     def calculate(self, clean, dirty):
         clean = clean.reshape(clean.shape[0], -1)
         dirty = dirty.reshape(dirty.shape[0], -1)
@@ -59,6 +68,7 @@ class ManhattanMetric(Metric):
     
 
 class WER(ToDo):
+
     requires = ["predicted_phones", "transcriptions"]
 
     def __init__(self, dictionary):
@@ -66,6 +76,10 @@ class WER(ToDo):
         
 
 class PER(Metric):
+    """
+    Phoneme error rate
+    """
+
     _requires = ["predicted_phones", "transcriptions"]
     
     def __init__(self, remove_symbols=None, mdl_symbol_map=None, dset_all_phones=None):
@@ -100,6 +114,10 @@ class PhonemeClassConfusion:
 
 
 class Metricization:
+    """
+    Base class
+    """
+
     def __init__(self, model, compile_mapping=False):
         self.metrics = []
         if isinstance(model, list):
@@ -183,6 +201,10 @@ class MetricResult:
             
             
 class MetricizationAB:
+    """
+    Comparison between two models.
+    """
+    
     def __init__(self, metrics=None):
         self.metrics = metrics or []
         self.results = {}
@@ -206,6 +228,10 @@ class MetricizationAB:
             
 
 class TrainedModelMetricization:
+    """
+    Basic model metricization class. Applies the metrics to a selection of recordings.
+    """
+
     def __init__(self, model, metrics=None):
         self.model = model
         self.metrics = metrics or []

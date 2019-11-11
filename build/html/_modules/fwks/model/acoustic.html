@@ -65,8 +65,8 @@
 <div class="viewcode-block" id="AcousticModel"><a class="viewcode-back" href="../../../reference.html#fwks.model.AcousticModel">[docs]</a><span class="k">class</span> <span class="nc">AcousticModel</span><span class="p">(</span><span class="n">SoundModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class of acoustic models</span>
-<span class="sd">    ------------------------</span>
-<span class="sd">    Acoustic model</span>
+
+<span class="sd">    Builds a model that either: a) maps the sound to another representatioon; b) predicts a sequence of events from the audio</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recording</span><span class="p">,</span> <span class="n">literal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">number_of_preds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beam_width</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span> <span class="n">multiple_recordings</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>

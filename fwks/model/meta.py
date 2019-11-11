@@ -30,6 +30,11 @@ class Representation:
 
 
 class MappingGenerator:
+    """
+    This class takes a list of stages and processes it to produce representation mapping, networks and
+    other constituents of models.
+    """
+
     def __init__(self, stages, representation_counter=None):
         self.stages = stages
         self.representation_mapping = None
@@ -77,10 +82,6 @@ class MappingGenerator:
 
 
 class ItemLoader:
-    """
-    Creates loadable item from object
-    Any pickleability should be done here
-    """
 
     def __init__(self, item):
         self.builder = None

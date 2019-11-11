@@ -2,7 +2,7 @@ from fwks.installer.meta import Dependency
 
 
 
-class Pynini(metaclass=Dependency):
+class Luigi(metaclass=Dependency):
     @classmethod
     def is_installed(self):
         pass
