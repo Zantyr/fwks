@@ -118,11 +118,10 @@ class MappingAdapter:
         pass
 
     @abc.abstractmethod
-    def generate(self, dataset, mapping, req):
+    def generate_requirement(self, dataset, mapping, req):
         pass
 
 
-# TODO: this class
 class MixturesMapper(MappingAdapter):
     """
     Takes clean recordings and produces mixtures of random selection of recordings for separation.
@@ -134,14 +133,38 @@ class MixturesMapper(MappingAdapter):
         """
         self.n_mixtures = n_mixtures
 
-    def __getattr__(self, k):
-        return super().__gettattr__(k)
+    def generate_requirement(self, dataset, mapping, req):
+        for i in range():
+            pass
 
-    def _from_cache(self):
-        """
-        if possible: load from this if possible
-        """
-        pass
+
+        print("Getting clean recordings")
+        n_recs = len(self.rec_fnames)
+        dtype = mapping.output_dtype(stage.DType("Array", [max(self.recording_lengths)], np.float32))
+        recordings = np.zeros([n_recs] + dtype.shape, dtype.dtype)
+        lens = []
+        for ix, fname in enumerate(tqdm.tqdm(self.rec_fnames)):
+            sr, data = self._loader_adapter.loader_function(fname)
+            assert sr == self.sr
+            data = data.astype(np.float32) / 2**15
+            data = mapping.map(data)
+            lens.append(data.shape[0])
+            key = [ix] + [slice(None, x, None) for x in data.shape]
+            recordings.__setitem__(key, data)
+        if hasattr(mapping, "normalize"):
+            if not (mapping.trained if hasattr(mapping, "trained") else hasattr(mapping, "mean")):
+                print("Applying normalization")
+                recordings = mapping.normalize(recordings, lens)
+        self.clean = recordings
+        self.clean_lens = np.array(lens)
+
+
+
+
+
+    @property
+    def produces(self):
+        return ["mixture"] + ["component_{}".format(x + 1) for x in range(self.n_mixtures)]
 
     def _get_mixture(self):
         rec_1 = self.from_cache() # indices from randomization

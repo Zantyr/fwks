@@ -1,3 +1,7 @@
 */*.pyc
 */*/*.pyc
 */*/*/*.pyc
+build/lib
+dist
+fwks.egg-info
+sound_awake_engine/*

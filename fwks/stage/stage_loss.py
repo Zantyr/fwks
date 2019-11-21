@@ -151,3 +151,72 @@ class L2Loss(Loss):
             optimizer=optimizer,
             selection_adapter=info["selection_adapter"]
         )
+
+
+class PermutationInvariantLoss(Loss):
+    def __init__(self, first_loss=None):
+        pass
+
+    def compile(self, network, callbacks=[]):
+        model = Model(network.inputs[0], network.inputs[0])
+        model.compile(loss='mse', optimizer=self.optimizer)
+        return model
+
+    @property
+    def selection_hash(self):
+        return self.selection_adapter.selection_hash
+
+    @property
+    def requirements(self):
+        return ["clean", "noisy"]
+
+    def fetch_train(self, dataset):
+        self.selection_adapter.initialize(dataset)
+        selection = self.selection_adapter.train
+        return [dataset.noisy[selection],
+                dataset.clean[selection]]
+
+    def fetch_valid(self, dataset):
+        self.selection_adapter.initialize(dataset)
+        selection = self.selection_adapter.valid
+        return [dataset.noisy[selection],
+                dataset.clean[selection]]
+
+    def fetch_test(self, dataset):
+        self.selection_adapter.initialize(dataset)
+        selection = self.selection_adapter.test
+        return [dataset.noisy[selection],
+                dataset.clean[selection]]
+
+    def serialize(self):
+        info = dict(optimizer=self.optimizer.__class__,
+                    optimizer_config=self.optimizer.get_config(),
+                    selection_adapter=self.selection_adapter)
+        return L2Loss.builder, info
+
+    @staticmethod
+    def builder(info):
+        optimizer = info["optimizer"].from_config(info["optimizer_config"])
+        return L2Loss(
+            optimizer=optimizer,
+            selection_adapter=info["selection_adapter"]
+        )
+
+
+
+def pit_training_factory(n_sources, loss):
+    permutations = zip(
+        itertools.repeat(range(n_sources)),
+        itertools.permutations(range(n_sources))
+    )
+    def final_loss(true, targets):
+        losses = []
+        for permutation in permutations:
+            loss_components = []
+            for i, j in permutation:
+                loss_components.append(
+                    loss(true[:, :, :, i], targets[:, :, :, j])
+                )
+            losses.append(K.sum(loss_components))
+        return K.min(losses)
+    return final_loss

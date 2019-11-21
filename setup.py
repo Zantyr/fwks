@@ -5,14 +5,21 @@ descr = open("README.md").read()
 
 setuptools.setup(
     name="fwks",
-    version="0.1",
+    version="0.1.1",
     author="Paweł Tomasik",
     author_email="tomasik.kwidzyn@gmail.com",
     description="A package for declarative specification of speech processing pipelines",
     long_description=descr,
     long_description_content_type="text/markdown",
     url="https://github.com/Zantyr/ASR",
-    packages=["fwks"],
+    packages=[
+        "fwks",
+        "fwks.dataset",
+        "fwks.installer",
+        "fwks.model",
+        "fwks.stage",
+        "fwks.utils"
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

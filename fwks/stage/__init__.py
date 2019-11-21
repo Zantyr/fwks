@@ -22,12 +22,12 @@ from syntax import Show
 __all__ = [
     "RandomSelectionAdapter", "SpeakerSelectionAdapter", "CTCLoss", "L2Loss", "PlainPowerFourier", "LogPowerFourier", "TrainableCQT", "TrainableCZT", "CZT", "CQT",
     "CommonFateTransform", "DCT", "Cochleagram", "CustomCochleagram", "Window", "EqualLoudnessWeighting", "PCENScaling", "AdaptiveGainAndCompressor", "OverlapAdd",
-    "CustomNeural",
+    "CustomNeural", "PermutationInvariantLoss"
 ]
 
 from .stage_meta import SelectionAdapter, Stage, NetworkableMixin, Loss, Analytic, Neural, ToDo, DType, CustomNeural, Normalizer
 from .stage_selection_adapter import RandomSelectionAdapter, SpeakerSelectionAdapter
-from .stage_loss import CTCLoss, L2Loss
+from .stage_loss import CTCLoss, L2Loss, PermutationInvariantLoss
 from .stage_transforms import PlainPowerFourier, LogPowerFourier, TrainableCQT, TrainableCZT, CZT, CQT, CommonFateTransform, DCT, Cochleagram, CustomCochleagram
 from .stage_preprocessing import Window, EqualLoudnessWeighting, PCENScaling, AdaptiveGainAndCompressor, OverlapAdd
 from .stage_filterbanks import TriangularERB, HarmonicTriangularERB, OverlappingHarmonicTriangularERB, RoEx, GammatoneFilterbank, MelFilterbank
