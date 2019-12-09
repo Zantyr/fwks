@@ -33,6 +33,7 @@
   <h1>Source code for fwks.dataset.adapters</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">abc</span>
 <span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">scipy.io.wavfile</span> <span class="k">as</span> <span class="nn">sio</span>
@@ -40,6 +41,9 @@
 
 
 <span class="k">class</span> <span class="nc">LoaderAdapter</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+
+    <span class="n">returns_transcripts</span> <span class="o">=</span> <span class="kc">True</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">loader_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -50,7 +54,7 @@
     <span class="k">def</span> <span class="nf">get_recording_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">lens</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Getting dataset lengths&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">get_fnames</span><span class="p">())):</span>
+        <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">zip_longest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">get_fnames</span><span class="p">())):</span>
             <span class="n">sr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">sio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">assert</span> <span class="n">sr</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">accepted_sr</span>
@@ -151,11 +155,10 @@
         <span class="k">pass</span>
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">generate_requirement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
         <span class="k">pass</span>
 
 
-<span class="c1"># TODO: this class</span>
 <div class="viewcode-block" id="MixturesMapper"><a class="viewcode-back" href="../../../reference.html#fwks.dataset.MixturesMapper">[docs]</a><span class="k">class</span> <span class="nc">MixturesMapper</span><span class="p">(</span><span class="n">MappingAdapter</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Takes clean recordings and produces mixtures of random selection of recordings for separation.</span>
@@ -167,14 +170,38 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_mixtures</span> <span class="o">=</span> <span class="n">n_mixtures</span>
 
-    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__gettattr__</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">generate_requirement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">():</span>
+            <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_from_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        if possible: load from this if possible</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Getting clean recordings&quot;</span><span class="p">)</span>
+        <span class="n">n_recs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rec_fnames</span><span class="p">)</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">output_dtype</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">DType</span><span class="p">(</span><span class="s2">&quot;Array&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">recording_lengths</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">recordings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_recs</span><span class="p">]</span> <span class="o">+</span> <span class="n">dtype</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">lens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">fname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rec_fnames</span><span class="p">)):</span>
+            <span class="n">sr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader_adapter</span><span class="o">.</span><span class="n">loader_function</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">sr</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">sr</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">**</span><span class="mi">15</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">lens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">]</span>
+            <span class="n">recordings</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="s2">&quot;normalize&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">mapping</span><span class="o">.</span><span class="n">trained</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="s2">&quot;trained&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">)):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Applying normalization&quot;</span><span class="p">)</span>
+                <span class="n">recordings</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">recordings</span><span class="p">,</span> <span class="n">lens</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clean</span> <span class="o">=</span> <span class="n">recordings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clean_lens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lens</span><span class="p">)</span>
+
+
+
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">produces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;mixture&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;component_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_mixtures</span><span class="p">)]</span>
 
     <span class="k">def</span> <span class="nf">_get_mixture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rec_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">()</span> <span class="c1"># indices from randomization</span>

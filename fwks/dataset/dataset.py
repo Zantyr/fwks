@@ -146,14 +146,22 @@ class Dataset(AbstractDataset):
         lens = self._loader_adapter.get_recording_lengths()
         sorted_records = np.array(sorted(list(range(len(lens))), key=lambda ix: lens[ix]))
         rec_fnames = [rec_fnames[x] for x in sorted_records]
-        trans_fnames = [trans_fnames[x] for x in sorted_records]
         lens = [lens[x] for x in sorted_records]
         self.rec_fnames = rec_fnames
-        self.trans_fnames = trans_fnames
         self.recording_lengths = lens
+        if self._loader_adapter.returns_transcripts:
+            trans_fnames = [trans_fnames[x] for x in sorted_records]
+            self.trans_fnames = trans_fnames
 
     def generate(self, mapping, requirements):
-        assert all([x in self._accepted_requirements for x in requirements])
+        if isinstance(self._loader_adapter, MappingAdapter):
+            _accepted_requirements = self._accepted_requirements + self._loader_adapter.produces
+            _mapping_adapters = self._mapping_adapters + [self._loader_adapter]
+        else:
+            _mapping_adapters = self._mapping_adapters
+        assert all([x in _accepted_requirements for x in requirements]), \
+            "Requirements of the model are not satisfied. " \
+            "Required items: {}, producable: {}".format(requirements, self._accepted_requirements)
         for req in requirements:
             if req == "clean":
                 self._get_cleans(mapping)
@@ -164,9 +172,10 @@ class Dataset(AbstractDataset):
             elif req == "stft":
                 self._get_stft()
             else:
-                for adapter in self._mapping_adapters:
+                for adapter in _mapping_adapters:
                     if req in adapter.produces:
-                        adapter.generate_requirement(self, mapping, req)
+                        value = adapter.generate_requirement(self, mapping, req)
+                        setattr(self, req, value)
                         break
                 else:
                     raise ValueError("Requirement {} is not produced by any of the adapters".format(req))
@@ -299,7 +308,8 @@ class Dataset(AbstractDataset):
             if not v in self.__adapters.keys():
                 raise TypeError("Key {} not in default adapters".format(v))
             self._loader_adapter = self.__adapters[v]
-        elif not isinstance(v, LoaderAdapter):
+        elif not issubclass(v, LoaderAdapter):
+            print(v, LoaderAdapter, issubclass(v, LoaderAdapter))
             raise TypeError("{} is not a proper Adapter; it should inherit from Adapter class".format(v))
         else:
             self._loader_adapter = v

@@ -1,5 +1,6 @@
 import abc
 import functools
+import itertools
 import operator
 import os
 import scipy.io.wavfile as sio
@@ -7,6 +8,9 @@ import tqdm
 
 
 class LoaderAdapter(metaclass=abc.ABCMeta):
+
+    returns_transcripts = True
+
     @property
     def loader_function(self):
         """
@@ -17,7 +21,7 @@ class LoaderAdapter(metaclass=abc.ABCMeta):
     def get_recording_lengths(self):
         lens = []
         print("Getting dataset lengths")
-        for f, _ in tqdm.tqdm(zip(*self.get_fnames())):
+        for f, _ in tqdm.tqdm(itertools.zip_longest(*self.get_fnames())):
             sr, data = sio.read(f)
             try:
                 assert sr == self.accepted_sr

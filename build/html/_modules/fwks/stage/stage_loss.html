@@ -184,6 +184,75 @@
             <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
             <span class="n">selection_adapter</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;selection_adapter&quot;</span><span class="p">]</span>
         <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PermutationInvariantLoss"><a class="viewcode-back" href="../../../reference.html#fwks.stage.PermutationInvariantLoss">[docs]</a><span class="k">class</span> <span class="nc">PermutationInvariantLoss</span><span class="p">(</span><span class="n">Loss</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_loss</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">network</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="s1">&#39;mse&#39;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">selection_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">selection_hash</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="s2">&quot;noisy&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">fetch_train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">train</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">noisy</span><span class="p">[</span><span class="n">selection</span><span class="p">],</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">selection</span><span class="p">]]</span>
+
+    <span class="k">def</span> <span class="nf">fetch_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">valid</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">noisy</span><span class="p">[</span><span class="n">selection</span><span class="p">],</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">selection</span><span class="p">]]</span>
+
+    <span class="k">def</span> <span class="nf">fetch_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="o">.</span><span class="n">test</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">noisy</span><span class="p">[</span><span class="n">selection</span><span class="p">],</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">clean</span><span class="p">[</span><span class="n">selection</span><span class="p">]]</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span>
+                    <span class="n">optimizer_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span>
+                    <span class="n">selection_adapter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">selection_adapter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">L2Loss</span><span class="o">.</span><span class="n">builder</span><span class="p">,</span> <span class="n">info</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">builder</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;optimizer_config&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">L2Loss</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">selection_adapter</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;selection_adapter&quot;</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">pit_training_factory</span><span class="p">(</span><span class="n">n_sources</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+    <span class="n">permutations</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_sources</span><span class="p">)),</span>
+        <span class="n">itertools</span><span class="o">.</span><span class="n">permutations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_sources</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">final_loss</span><span class="p">(</span><span class="n">true</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+        <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">permutation</span> <span class="ow">in</span> <span class="n">permutations</span><span class="p">:</span>
+            <span class="n">loss_components</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">permutation</span><span class="p">:</span>
+                <span class="n">loss_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">loss</span><span class="p">(</span><span class="n">true</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">targets</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="p">)</span>
+            <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">loss_components</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">K</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">final_loss</span>
 </pre></div>
 
           </div>

@@ -5,7 +5,7 @@ descr = open("README.md").read()
 
 setuptools.setup(
     name="fwks",
-    version="0.1.1",
+    version="0.1.2",
     author="Paweł Tomasik",
     author_email="tomasik.kwidzyn@gmail.com",
     description="A package for declarative specification of speech processing pipelines",

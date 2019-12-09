@@ -137,6 +137,10 @@ class Loss(Stage, metaclass=abc.ABCMeta):
     def serialize(self):
         pass
 
+    @abc.abstractmethod
+    def compile(self, network, callbacks=[]):
+        pass
+
 
 class DType(Show):
     def __init__(self, cls, shape, dtype):
